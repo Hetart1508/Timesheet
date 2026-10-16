@@ -8,6 +8,8 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { timesheetRouter } from './modules/timesheets/timesheet.routes.js';
+import { companyRouter } from './modules/companies/company.routes.js';
 import { verifyRequestOrigin } from './middleware/csrf.js';
 import { AppError } from './utils/app-error.js';
 import { errorHandler, notFound } from './middleware/errors.js';
@@ -38,6 +40,8 @@ export function createApp(options = {}) {
 
   app.use('/api/v1/health', healthRouter);
   app.use('/api/v1/auth', options.authRouter || authRouter);
+  app.use('/api/v1/agent', options.timesheetRouter || timesheetRouter);
+  app.use('/api/v1/companies', options.companyRouter || companyRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

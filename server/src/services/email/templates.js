@@ -45,4 +45,11 @@ export const templates = {
       html: layout('Password changed', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Your password was changed successfully and all existing sessions were signed out. Contact an administrator if this was not you.</p>`),
     };
   },
+  timesheetSubmitted({ adminName, agentName, workDate, url }) {
+    return {
+      subject: `Timesheet submitted by ${agentName} for ${workDate}`,
+      text: `Hello ${adminName},\n\n${agentName} submitted a timesheet for ${workDate}. Review it here:\n${url}`,
+      html: layout('Timesheet ready for review', `<p>Hello ${escapeHtml(adminName)},</p><p style="line-height:1.7"><strong>${escapeHtml(agentName)}</strong> submitted a timesheet for ${escapeHtml(workDate)}.</p>`, actionButton('Review timesheet', url)),
+    };
+  },
 };

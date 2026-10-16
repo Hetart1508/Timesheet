@@ -69,4 +69,13 @@ export class EmailService {
   sendPasswordChanged(user) {
     return this.sendTracked({ recipient: user.email, type: 'PASSWORD_CHANGED', entityId: user.id, template: templates.passwordChanged({ name: user.fullName }) });
   }
+
+  sendTimesheetSubmitted(admin, timesheet) {
+    const url = `${this.config.APP_BASE_URL}/admin/timesheets/${timesheet.id}`;
+    return this.sendTracked({
+      recipient: admin.email, type: 'TIMESHEET_SUBMITTED', entityId: timesheet.id,
+      template: templates.timesheetSubmitted({ adminName: admin.full_name, agentName: timesheet.agentName, workDate: timesheet.workDate, url }),
+      developmentLink: url,
+    });
+  }
 }
