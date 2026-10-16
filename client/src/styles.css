@@ -1,0 +1,49 @@
+:root {
+  font-family: Inter, Geist, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1f2937;
+  background: #fafbfc;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --primary: #4f9cf9;
+  --primary-soft: #eef6ff;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+  --surface: #ffffff;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+
+.page-shell {
+  width: min(1080px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  place-content: center;
+  padding: 64px 0;
+}
+
+.intro { max-width: 700px; margin-bottom: 36px; }
+.brand-mark, .card-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--primary); background: var(--primary-soft); border-radius: 12px;
+}
+.brand-mark { width: 48px; height: 48px; margin-bottom: 24px; }
+.eyebrow { margin: 0 0 10px; color: var(--primary); font-size: 0.78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+h1 { margin: 0; color: #111827; font-size: clamp(2.25rem, 7vw, 4.5rem); line-height: 1.02; letter-spacing: -.055em; }
+.lede { max-width: 640px; margin: 22px 0; color: var(--muted); font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
+.phase-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; color: #2875d1; background: var(--primary-soft); border: 1px solid #d7eaff; border-radius: 999px; font-size: .86rem; font-weight: 700; }
+.foundation-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.foundation-card { padding: 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 40px rgba(31, 41, 55, .06); }
+.card-icon { width: 38px; height: 38px; }
+.foundation-card h2 { margin: 18px 0 8px; font-size: 1rem; }
+.foundation-card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.55; }
+.checkpoint { margin: 24px 0 0; color: var(--muted); font-size: .85rem; }
+
+@media (max-width: 720px) {
+  .page-shell { place-content: start; padding: 40px 0; }
+  .foundation-grid { grid-template-columns: 1fr; }
+}
+
+:focus-visible { outline: 3px solid rgba(79, 156, 249, .35); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
