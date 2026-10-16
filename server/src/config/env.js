@@ -15,9 +15,9 @@ const booleanValue = z
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  SERVER_PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+  SERVER_PORT: z.coerce.number().int().min(1).max(65535).default(5001),
   APP_BASE_URL: z.url().default('http://localhost:5173'),
-  API_BASE_URL: z.url().default('http://localhost:5000'),
+  API_BASE_URL: z.url().default('http://localhost:5001'),
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   TRUST_PROXY: booleanValue,
   DB_HOST: z.string().min(1).default('127.0.0.1'),
@@ -38,6 +38,8 @@ const schema = z.object({
   COOKIE_SECURE: booleanValue,
   COOKIE_DOMAIN: z.string().optional(),
   PASSWORD_MIN_LENGTH: z.coerce.number().int().min(12).max(64).default(12),
+  EMAIL_OTP_TTL_MINUTES: z.coerce.number().int().min(5).max(30).default(10),
+  EMAIL_OTP_MAX_ATTEMPTS: z.coerce.number().int().min(3).max(10).default(5),
   DEV_EMAIL_MODE: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
   BREVO_API_KEY: z.string().optional(),
   BREVO_SENDER_NAME: z.string().default('Timesheet Management'),

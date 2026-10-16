@@ -8,9 +8,10 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: Number(env.CLIENT_PORT || 5173),
+      strictPort: true,
       proxy: {
         '/api': {
-          target: env.API_BASE_URL || 'http://localhost:5000',
+          target: env.API_BASE_URL || 'http://localhost:5001',
           changeOrigin: true,
         },
       },

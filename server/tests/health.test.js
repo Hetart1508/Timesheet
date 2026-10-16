@@ -17,6 +17,17 @@ describe('foundation API', () => {
     expect(response.body).toMatchObject({ success: false, code: 'NOT_FOUND' });
     expect(response.body.requestId).toBeTruthy();
   });
+
+  it('turns database connection failures into a safe actionable response', async () => {
+    const testApp = createApp({ authRouter: (await import('express')).Router().post('/database-failure', (_req, _res, next) => {
+      const error = new Error('sensitive connection details');
+      error.code = 'ER_ACCESS_DENIED_ERROR';
+      next(error);
+    }) });
+    const response = await request(testApp).post('/api/v1/auth/database-failure').expect(503);
+    expect(response.body).toMatchObject({ success: false, code: 'DATABASE_UNAVAILABLE' });
+    expect(response.text).not.toContain('sensitive connection details');
+  });
 });
 
 afterAll(async () => {

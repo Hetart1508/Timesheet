@@ -6,6 +6,15 @@ import { pool } from './database/connection.js';
 
 const server = http.createServer(createApp());
 
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.fatal({ port: env.SERVER_PORT }, 'API port is already in use. Stop the conflicting service or choose another SERVER_PORT and update API_BASE_URL.');
+  } else {
+    logger.fatal({ err: error }, 'API server failed to start');
+  }
+  process.exitCode = 1;
+});
+
 server.listen(env.SERVER_PORT, () => {
   logger.info({ port: env.SERVER_PORT, environment: env.NODE_ENV }, 'Timesheet API listening');
 });

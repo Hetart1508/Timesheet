@@ -6,15 +6,20 @@ export function notFound(req, _res, next) {
 }
 
 export function errorHandler(error, req, res, _next) {
-  const expected = error instanceof AppError;
-  const statusCode = expected ? error.statusCode : 500;
+  const databaseUnavailable = ['ECONNREFUSED', 'ER_ACCESS_DENIED_ERROR', 'ER_BAD_DB_ERROR', 'ER_NO_SUCH_TABLE'].includes(error?.code);
+  const normalizedError = databaseUnavailable
+    ? new AppError(503, 'DATABASE_UNAVAILABLE', 'The database is not configured or ready. Check the server environment and run migrations.')
+    : error;
+  const expected = normalizedError instanceof AppError;
+  const statusCode = expected ? normalizedError.statusCode : 500;
   if (!expected) logger.error({ err: error, requestId: req.id }, 'Unhandled request error');
+  if (databaseUnavailable) logger.error({ err: error, requestId: req.id }, 'Database request failed');
 
   res.status(statusCode).json({
     success: false,
-    message: expected ? error.message : 'An unexpected error occurred',
-    code: expected ? error.code : 'INTERNAL_ERROR',
-    ...(expected && error.details ? { errors: error.details } : {}),
+    message: expected ? normalizedError.message : 'An unexpected error occurred',
+    code: expected ? normalizedError.code : 'INTERNAL_ERROR',
+    ...(expected && normalizedError.details ? { errors: normalizedError.details } : {}),
     requestId: req.id,
   });
 }

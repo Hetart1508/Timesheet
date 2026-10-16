@@ -24,17 +24,22 @@ npm run db:status
 npm run dev
 ```
 
-Expected URLs: frontend `http://localhost:5173`, API liveness `http://localhost:5000/api/v1/health/live`, database readiness `http://localhost:5000/api/v1/health/ready`.
+Expected URLs: frontend `http://localhost:5173`, API liveness `http://localhost:5001/api/v1/health/live`, database readiness `http://localhost:5001/api/v1/health/ready`.
 
 ## Phase 2 — Authentication and security
 
-- Registration and single-use email verification
-- Login by username/email, HttpOnly access cookie, opaque refresh rotation
-- CSRF protection, origin validation, rate limits, logout/session revocation
-- Forgot/reset password, Brevo integration, Admin bootstrap
-- Authentication and authorization tests
+- [x] Agent-only registration and single-use six-digit email OTP verification
+- [x] Login by username/email, HttpOnly access cookie, opaque refresh rotation
+- [x] CSRF protection, origin validation, rate limits, logout/session revocation
+- [x] Forgot/reset/change password and session revocation
+- [x] Brevo transactional email plus explicit development email mode
+- [x] guarded one-time Admin bootstrap
+- [x] public authentication pages and protected session loading
+- [x] authentication, authorization and provider-isolation tests
+- [ ] MySQL-backed authentication suite executed against the local test database
+- [ ] public flows visually verified in a browser session
 
-Test gate: dedicated test database migration plus auth API suite and public-page browser flow.
+Test gate: configure the dedicated test database, migrate, bootstrap an Admin, then complete registration → verification → login → refresh → logout and forgot/reset flows.
 
 ## Phase 3 — Agent timesheets
 
