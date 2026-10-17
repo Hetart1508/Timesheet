@@ -10,7 +10,7 @@ const agentLinks = [
 const adminLinks = [
   ['/dashboard', 'Admin overview', LayoutDashboard], ['/admin/timesheets?status=SUBMITTED', 'Review queue', FileCheck2],
   ['/admin/timesheets', 'All timesheets', CalendarDays], ['/admin/agents', 'Agent directory', Users],
-  ['/companies', 'Company directory', Building2], ['/admin/analytics', 'Analytics & reports', BarChart3],
+  ['/admin/companies', 'Company directory', Building2], ['/admin/analytics', 'Analytics & reports', BarChart3],
   ['/admin/exports', 'Export center', Download], ['/admin/audits', 'Audit logs', ShieldCheck], ['/profile', 'Profile & security', UserRound],
 ];
 

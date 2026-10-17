@@ -1,14 +1,16 @@
-# API conventions
+# API
 
-All application endpoints use `/api/v1`.
+All API routes use `/api/v1`. Request and response bodies use JSON unless a route returns an export file. List routes accept the filters shown below; page numbers start at 1. Validation failures return `422`.
 
-Success envelope:
+## Response contract
+
+JSON success responses use this envelope:
 
 ```json
 { "success": true, "data": {}, "message": "Operation completed successfully" }
 ```
 
-Failure envelope:
+JSON failures use a safe public message and stable code:
 
 ```json
 {
@@ -19,29 +21,83 @@ Failure envelope:
 }
 ```
 
-Every response includes `x-request-id`. Unexpected failures are logged with the same identifier while the client receives no stack trace or raw database error.
+Every response includes `x-request-id`. Unexpected errors are logged against that ID; stack traces and raw database errors are not sent to clients.
 
-## Phase 1 endpoints
+## Health
 
-- `GET /api/v1/health/live` — process liveness; does not depend on MySQL.
-- `GET /api/v1/health/ready` — verifies a MySQL connection and query; returns `503 DATABASE_UNAVAILABLE` safely when unavailable.
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/health/live` | Public | Process liveness; no database dependency. |
+| GET | `/health/ready` | Public | Verifies MySQL connectivity and query access; unavailable database returns `503 DATABASE_UNAVAILABLE`. |
 
-## Phase 2 authentication endpoints
+## Authentication
 
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/verify-email`
-- `POST /api/v1/auth/resend-verification`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/refresh`
-- `POST /api/v1/auth/logout`
-- `POST /api/v1/auth/logout-all`
-- `GET /api/v1/auth/me`
-- `POST /api/v1/auth/forgot-password`
-- `POST /api/v1/auth/reset-password`
-- `POST /api/v1/auth/change-password`
+All paths below are under `/api/v1/auth`.
 
-Login and refresh set `ts_access` and `ts_refresh` as HttpOnly cookies. They also set a readable `ts_csrf` cookie. State-changing authenticated requests must copy that value into `X-CSRF-Token`; the bundled Axios client does this automatically. JWTs and refresh tokens are never returned in JSON.
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| POST | `/register` | Public, rate-limited | Creates an Agent account and sends a verification code. The role is never accepted from the client. |
+| POST | `/verify-email` | Public, rate-limited | Verifies `{ "email": "agent@example.com", "otp": "123456" }`. |
+| POST | `/resend-verification` | Public, rate-limited | Sends a replacement code when the account is eligible. |
+| POST | `/login` | Public, rate-limited | Accepts username/email and password; sets session cookies. |
+| POST | `/refresh` | Refresh cookie + CSRF | Rotates the refresh session and access cookie. |
+| POST | `/logout` | CSRF | Revokes the current refresh session and clears cookies. |
+| POST | `/logout-all` | Authenticated + CSRF | Revokes every session for the current user. |
+| GET | `/me` | Authenticated | Returns the current user. |
+| POST | `/forgot-password` | Public, rate-limited | Starts a reset flow without disclosing account eligibility. |
+| POST | `/reset-password` | Public, rate-limited | Accepts a reset token and new password; revokes existing sessions. |
+| POST | `/change-password` | Authenticated + CSRF | Changes the password and revokes existing sessions. |
 
-Email verification accepts `{ "email": "agent@example.com", "otp": "123456" }`. The code expires after 10 minutes, is stored only as a SHA-256 hash, is replaced when resent, and is locked after five incorrect attempts.
+Verification codes are single-use, expire after 10 minutes by default, are stored as SHA-256 hashes, and are locked after five incorrect attempts by default. Login and refresh set `ts_access` and `ts_refresh` as HttpOnly cookies and `ts_csrf` as a readable cookie. Authenticated state-changing requests must echo the CSRF cookie in `X-CSRF-Token`; the bundled Axios client does this. JWTs and refresh tokens are not returned in JSON or browser storage.
 
-Business endpoints are introduced in their corresponding phases, not exposed as non-functional placeholders.
+## Agent timesheets
+
+All routes are under `/api/v1/agent` and require an active Agent session. A daily sheet is unique per Agent and work date. Create or open a selected date with `POST /timesheets` and `{ "workDate": "YYYY-MM-DD" }`; omit `workDate` to use the current business date. Future dates are rejected. Repeating the request for an existing date returns that day’s sheet.
+
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/dashboard` | Agent | Current business date, today’s sheet summary, and recent sheets. |
+| GET | `/timesheets` | Agent | History filtered by `startDate`, `endDate`, `status`, `page`, and `pageSize` (maximum 50). |
+| POST | `/timesheets` | Agent + CSRF | Create or open the daily sheet for optional `workDate`. |
+| GET | `/timesheets/:id` | Owning Agent | Sheet declaration, visits, and review details. |
+| PUT | `/timesheets/:id` | Owning Agent + CSRF | Save `{ "dailySummary": "..." }`. |
+| POST | `/timesheets/:id/visits` | Owning Agent + CSRF | Add a company visit with company, contact, purpose, notes, `checkInTime`, and `checkOutTime` (`HH:mm`). |
+| PUT | `/visits/:id` | Owning Agent + CSRF | Edit a visit. |
+| DELETE | `/visits/:id` | Owning Agent + CSRF | Soft-delete a visit. |
+| POST | `/timesheets/:id/submit` | Owning Agent + CSRF | Submit the daily sheet for review. |
+
+Each visit is stored against the selected work date and interpreted in `BUSINESS_TIMEZONE` (default `Asia/Kolkata`). Checkout must be later than check-in, and overlapping visits on the same sheet are rejected.
+
+## Companies
+
+Routes are under `/api/v1/companies` and require authentication. Listing accepts `search`, `page`, and `pageSize` (maximum 50). Agent-created entries are pending review. Agents can edit or delete only their own active pending entries; once approved, a company is shared and read-only to Agents. Admins can create, edit, approve, and deactivate any company.
+
+| Method | Path | Access | Description |
+| --- | --- | --- | --- |
+| GET | `/` | Authenticated | Lists companies available to the caller. |
+| GET | `/mine` | Agent | Lists the Agent’s own submissions, including inactive records. |
+| POST | `/` | Authenticated + CSRF | Creates a company; Agent entries are pending review, Admin entries are approved. |
+| GET | `/:id/visits` | Authenticated | Lists visits for a company. |
+| PUT | `/:id` | Admin or owning Agent + CSRF | Updates details; Agent updates require an active, pending company they created. |
+| DELETE | `/:id` | Admin or owning Agent + CSRF | Soft-deactivates the company; visit history and company-name snapshots are retained. |
+
+## Administration and reports
+
+All routes are under `/api/v1/admin` and require an active Admin session. Mutations require CSRF.
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/dashboard` | Operational metrics and pending review queue. |
+| GET | `/timesheets` | Filter by status, Agent, date range, and pagination. |
+| GET | `/timesheets/:id` | Full timesheet detail for review. |
+| POST | `/timesheets/:id/review` | Record `APPROVED`, `REJECTED`, or `CHANGES_REQUESTED`; non-approval decisions require a comment of at least five characters. |
+| GET | `/agents` | Search/filter Agents and view activity totals. |
+| PATCH | `/agents/:id/status` | Activate/deactivate an Agent; deactivation revokes sessions. |
+| GET | `/companies` | Search/filter company review and availability status; accepts `search`, `reviewStatus`, `status`, `page`, and `pageSize`. |
+| PATCH | `/companies/:id` | Approve a pending company or change its availability; inactive entries can be reactivated. |
+| GET | `/audits` | Filter append-only audit events by action/entity type. |
+| GET | `/analytics` | Date-scoped daily, monthly, Agent, and company aggregation. |
+| GET | `/exports/timesheets.csv` | Filtered visit-level CSV download. |
+| GET | `/exports/timesheets.xlsx` | Filtered visit-level XLSX download. |
+
+Exports accept optional `agentId`, `status`, `startDate`, and `endDate` query parameters. Export responses are files rather than JSON envelopes; formula-like user text is escaped and each export is audited.

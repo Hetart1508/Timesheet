@@ -6,7 +6,7 @@ Development is intentionally phase-gated so the frontend, backend and database c
 
 ## Current checkpoint
 
-Phases 1–5 are implemented across the API and React UI, with the final signed-in browser walkthroughs still pending. The foundation, authentication, security controls, Agent workflow, Admin review and directory controls, analytics, secure CSV/XLSX exports, Brevo adapter, and Admin bootstrap are covered by automated tests. Local MySQL migrations have been verified through `002_email_verification_otp.sql`.
+Phases 1–6 are implemented across the API and React UI. Automated server/client tests, the production client build, and both local MySQL migrations have been verified. Signed-in desktop/mobile walkthroughs for both roles remain pending; browser checks so far cover the public sign-in screen and the mobile viewport.
 
 ## Prerequisites
 
@@ -75,16 +75,17 @@ npm run db:migrate
 npm run db:status
 ```
 
-The status command should report `UP 001_initial_schema.sql`.
+The status command should report both `UP 001_initial_schema.sql` and `UP 002_email_verification_otp.sql`.
 
 ## 5. Test each layer
 
-Backend and frontend automated tests:
+Run the full automated suite:
 
 ```bash
-npm run test:server
-npm run test:client
+npm test
 ```
+
+To run one side separately, use `npm run test:server` or `npm run test:client`.
 
 Production frontend build:
 
@@ -108,7 +109,7 @@ npm run dev
 - API liveness: <http://localhost:5001/api/v1/health/live>
 - API/database readiness: <http://localhost:5001/api/v1/health/ready>
 
-The Vite development server proxies `/api` to Express. Browser credentials are included only by the Phase 2 API client, when secure authentication is introduced.
+The Vite development server proxies `/api` to Express. The browser API client sends cookies, applies the CSRF header for state-changing requests, and keeps access/refresh tokens out of browser storage.
 
 ## Scripts
 
@@ -140,9 +141,9 @@ To create the first Admin, temporarily set the four `ADMIN_*` values in `.env`, 
 npm run admin:bootstrap
 ```
 
-The command refuses to run if an Admin already exists. Remove the bootstrap password from `.env` immediately afterward. Subsequent Admin creation will be implemented as an Admin-only operation in Phase 4.
+The command refuses to run if an Admin already exists. Remove the bootstrap password from `.env` immediately afterward. There is no public Admin registration flow; later account administration is restricted to authenticated Admin actions.
 
-For real email, set `DEV_EMAIL_MODE=false`, `BREVO_API_KEY`, and a verified `BREVO_SENDER_EMAIL`. Delivery uses Brevo's current transactional endpoint at `POST https://api.brevo.com/v3/smtp/email`; failed delivery is recorded without rolling back a successfully created account or reset request.
+For real email, set `DEV_EMAIL_MODE=false`, `BREVO_API_KEY`, and a verified `BREVO_SENDER_EMAIL`. Delivery uses Brevo's current transactional endpoint at `POST https://api.brevo.com/v3/smtp/email`; failed delivery is recorded without rolling back a successfully created account or reset request. Automated tests mock provider success and failure responses; live Brevo delivery has not been verified as part of this checkpoint.
 
 ## Troubleshooting
 
@@ -155,8 +156,9 @@ For real email, set `DEV_EMAIL_MODE=false`, `BREVO_API_KEY`, and a verified `BRE
 
 - Never commit `.env`.
 - Do not use MySQL `root` as the application runtime account.
-- Development email mode will be added in Phase 2 and will be refused in production.
-- Authentication credentials will use Secure, HttpOnly cookies; browser storage will not contain JWTs.
+- `DEV_EMAIL_MODE=true` is for local development only and is rejected in production. Real email requires a valid Brevo API key and verified sender.
+- Access and refresh credentials use HttpOnly cookies; the CSRF cookie is readable by the client and echoed in `X-CSRF-Token` for protected mutations. JWTs are not stored in browser storage.
+- Use HTTPS in production with `COOKIE_SECURE=true`, an exact `CORS_ORIGINS` allowlist, and a least-privilege database runtime user.
 
 ## Reference project
 

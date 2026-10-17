@@ -41,8 +41,20 @@ export const agentApi = {
     const { data } = await api.get('/companies', { params: { search, pageSize: 50 } });
     return data.data.companies;
   },
+  async listMyCompanies(params = {}) {
+    const { data } = await api.get('/companies/mine', { params });
+    return data.data;
+  },
   async createCompany(company) {
     const { data } = await api.post('/companies', company);
+    return data.data.company;
+  },
+  async updateCompany(id, company) {
+    const { data } = await api.put(`/companies/${id}`, company);
+    return data.data.company;
+  },
+  async deleteCompany(id) {
+    const { data } = await api.delete(`/companies/${id}`);
     return data.data.company;
   },
 };

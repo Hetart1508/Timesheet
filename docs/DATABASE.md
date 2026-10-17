@@ -4,7 +4,7 @@ MySQL is the source of truth. Timestamps are stored as UTC `DATETIME(6)` values;
 
 ## Migration policy
 
-SQL files in `server/src/database/migrations` are applied in lexical order. Applied filenames are recorded in `schema_migrations`. Production application startup never mutates the schema automatically.
+SQL files in `server/src/database/migrations` are applied in lexical order. Applied filenames are recorded in `schema_migrations`; `npm run db:status` reports each migration as `UP` or `DOWN`. Production application startup never mutates the schema automatically. The current migration set is `001_initial_schema.sql` and `002_email_verification_otp.sql`.
 
 The initial migration contains:
 
@@ -16,6 +16,21 @@ The initial migration contains:
 - soft-deletable visits with company-name snapshots and positive-duration constraints;
 - append-only review and audit history;
 - a persistent notification outbox.
+
+The unique `(agent_id, work_date)` key guarantees one daily timesheet per Agent and date. A sheet may contain multiple company visits; each visit has its own check-in/check-out interval. The selected work date is interpreted in `BUSINESS_TIMEZONE` (default `Asia/Kolkata`), while visit timestamps are stored as UTC `DATETIME(6)`. The service rejects future work dates, checkout times not later than check-in, and overlapping visits on the same sheet.
+
+## Verify migrations
+
+Apply pending migrations and inspect the ledger:
+
+```bash
+npm run db:migrate
+npm run db:status
+```
+
+The verified local database reports `UP` for both migration files. Keep production migration execution as a release step using a migration identity with DDL privileges; the application runtime should use a separate least-privilege account.
+
+MySQL may implicitly commit DDL, so a failed migration is not guaranteed to roll back atomically even though the runner wraps each file in a transaction. Inspect the reported statement and `schema_migrations` before retrying; do not manually mark a partially applied migration as complete.
 
 Foreign keys use restrictive deletion policies where history must survive. User-facing account removal is therefore implemented as deactivation rather than physical deletion.
 

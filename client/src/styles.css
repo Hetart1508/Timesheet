@@ -201,6 +201,7 @@ button { cursor: pointer; }
 .account-status.inactive { color: var(--danger); background: var(--danger-soft); }
 .account-status.pending { color: #9a5a0a; background: #fff7df; }
 .company-filter, .audit-filter { grid-template-columns: 2fr 1fr auto; }
+.admin-company-filter { grid-template-columns: 1.6fr 1fr 1fr auto; }
 .company-admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .company-admin-card { padding: 19px; border: 1px solid var(--border); border-radius: 11px; }
 .company-admin-card > svg { margin: 16px 0 6px; color: var(--primary); }

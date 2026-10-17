@@ -15,12 +15,16 @@ export function createCompanyRouter(options = {}) {
   router.get('/', validate(companyListSchema), asyncHandler(async (req, res) => {
     res.json({ success: true, data: await service.list(req.validated.query), message: 'Companies loaded' });
   }));
+  router.get('/mine', requireRole('AGENT'), validate(companyListSchema), asyncHandler(async (req, res) => {
+    res.json({ success: true, data: await service.listMine(req.user.id, req.validated.query), message: 'Your companies loaded' });
+  }));
   router.post('/', requireCsrf, validate(createCompanySchema), asyncHandler(async (req, res) => {
     const company = await service.create(req.validated.body, req.user, { ip: req.ip });
     res.status(201).json({ success: true, data: { company }, message: 'Company created' });
   }));
   router.get('/:id/visits', validate(timesheetIdSchema), asyncHandler(async (req, res) => res.json({ success: true, data: { visits: await service.visits(req.validated.params.id) }, message: 'Company visits loaded' })));
-  router.put('/:id', requireRole('ADMIN'), requireCsrf, validate(updateCompanySchema), asyncHandler(async (req, res) => res.json({ success: true, data: { company: await service.update(req.validated.params.id, req.validated.body, req.user, { ip: req.ip }) }, message: 'Company updated' })));
+  router.put('/:id', requireCsrf, validate(updateCompanySchema), asyncHandler(async (req, res) => res.json({ success: true, data: { company: await service.update(req.validated.params.id, req.validated.body, req.user, { ip: req.ip }) }, message: 'Company updated' })));
+  router.delete('/:id', requireCsrf, validate(timesheetIdSchema), asyncHandler(async (req, res) => res.json({ success: true, data: { company: await service.delete(req.validated.params.id, req.user, { ip: req.ip }) }, message: 'Company deactivated' })));
   return router;
 }
 

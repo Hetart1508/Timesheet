@@ -12,6 +12,7 @@ import ProfilePage from './pages/shared/ProfilePage.jsx';
 import NotFoundPage from './pages/shared/NotFoundPage.jsx';
 import TimesheetHistoryPage from './pages/agent/TimesheetHistoryPage.jsx';
 import TimesheetPage from './pages/agent/TimesheetPage.jsx';
+import AgentCompaniesPage from './pages/agent/AgentCompaniesPage.jsx';
 import AdminTimesheetsPage from './pages/admin/AdminTimesheetsPage.jsx';
 import AdminReviewPage from './pages/admin/AdminReviewPage.jsx';
 import AdminAgentsPage from './pages/admin/AdminAgentsPage.jsx';
@@ -36,6 +37,7 @@ export default function App() {
           <Route element={<ProtectedRoute role="AGENT" />}>
             <Route path="/timesheets" element={<TimesheetHistoryPage />} />
             <Route path="/timesheets/:id" element={<TimesheetPage />} />
+            <Route path="/companies" element={<AgentCompaniesPage />} />
           </Route>
           <Route element={<ProtectedRoute role="ADMIN" />}>
             <Route path="/admin/timesheets" element={<AdminTimesheetsPage />} />

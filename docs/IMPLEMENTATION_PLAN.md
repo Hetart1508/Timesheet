@@ -55,7 +55,7 @@ Test gate: create, edit, submit, correct and resubmit using an Agent account.
 
 - [x] Operations dashboard and pending-review queue
 - [x] Agent activation/deactivation with immediate session revocation
-- [x] Company approval and availability administration
+- [x] Company CRUD: Admin create/edit/approve/deactivate/reactivate; Agent-owned pending submissions can be edited or deactivated, with visit history retained
 - [x] Timesheet review, approval/rejection/change requests
 - [x] Audit viewer and focused authorization/service coverage
 - [ ] Signed-in Admin browser walkthrough completed
@@ -77,18 +77,20 @@ Test gate: seeded aggregation assertions and export-content checks.
 - [x] Responsive desktop/mobile shell, accessible controls, skip navigation, and mobile-menu focus handling
 - [x] Loading, empty, failure/retry, and confirmation states across Agent and Admin workflows
 - [x] No placeholder production data or inert actions in the implemented workflows
-- [x] Full workspace tests (39 server tests and 10 client tests) and production client build
+- [x] Full workspace tests (39 server tests and 11 client tests) and production client build
 - [ ] Signed-in desktop/mobile browser walkthroughs for both roles; local test sessions are not available yet
 
 Test gate: desktop and mobile browser walkthroughs for both roles. The browser currently verifies the public sign-in screen; the authenticated role walkthrough remains open until local test sessions are available.
 
 ## Phase 7 — Final verification and documentation
 
-- Complete automated suite, production build, migration verification
-- API, database, security and deployment documentation
-- Honest record of external-service tests and remaining environment limitations
+- [x] Complete automated suite (39 server tests and 11 client tests) and production build
+- [x] Verify both local migrations report `UP`
+- [x] Update API, database, security, deployment, and setup documentation
+- [x] Record that Brevo tests use mocked HTTP responses and live delivery is unverified
+- [ ] Clean install following only the README; not run to avoid replacing dependencies under the active dev server
 
-Test gate: clean install following only the README.
+Test gate: clean install following only the README. Migration, test, build, and documentation checks passed; the clean-install gate remains open.
 
 ## Reference project decisions
 

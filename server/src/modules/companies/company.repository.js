@@ -7,12 +7,26 @@ export class CompanyRepository {
     const search = `%${filters.search.toLowerCase()}%`;
     const offset = (filters.page - 1) * filters.pageSize;
     const [rows] = await connection.execute(
-      `SELECT id, company_name, address, contact_person, contact_phone, notes, review_status
+      `SELECT id, company_name, address, contact_person, contact_phone, notes, status, review_status
        FROM companies WHERE status = 'ACTIVE' AND company_name_normalized LIKE ?
        ORDER BY company_name LIMIT ? OFFSET ?`, [search, filters.pageSize, offset],
     );
     const [counts] = await connection.execute(
       `SELECT COUNT(*) AS total FROM companies WHERE status = 'ACTIVE' AND company_name_normalized LIKE ?`, [search],
+    );
+    return { rows, total: Number(counts[0].total) };
+  }
+
+  async listMine(agentId, filters, connection = pool) {
+    const search = `%${filters.search.toLowerCase()}%`;
+    const offset = (filters.page - 1) * filters.pageSize;
+    const [rows] = await connection.execute(
+      `SELECT id, company_name, address, contact_person, contact_phone, notes, status, review_status
+       FROM companies WHERE created_by = ? AND company_name_normalized LIKE ?
+       ORDER BY created_at DESC LIMIT ? OFFSET ?`, [agentId, search, filters.pageSize, offset],
+    );
+    const [counts] = await connection.execute(
+      'SELECT COUNT(*) AS total FROM companies WHERE created_by = ? AND company_name_normalized LIKE ?', [agentId, search],
     );
     return { rows, total: Number(counts[0].total) };
   }
@@ -37,18 +51,24 @@ export class CompanyRepository {
 
   async findById(id, connection = pool) {
     const [rows] = await connection.execute(
-      `SELECT id, company_name, address, contact_person, contact_phone, notes, status, review_status
+      `SELECT id, company_name, address, contact_person, contact_phone, notes, status, review_status, created_by
        FROM companies WHERE id = ? LIMIT 1`, [id],
     );
     return rows[0] || null;
   }
 
-  async update(id, data, connection) {
+  async findForUpdate(id, connection) {
     const [rows] = await connection.execute('SELECT * FROM companies WHERE id = ? FOR UPDATE', [id]);
-    if (!rows[0]) return null;
+    return rows[0] || null;
+  }
+
+  async update(id, data, connection) {
     await connection.execute(`UPDATE companies SET company_name = ?, company_name_normalized = ?, address = ?, contact_person = ?, contact_phone = ?, notes = ? WHERE id = ?`,
       [data.companyName, data.normalizedName, data.address, data.contactPerson || null, data.contactPhone || null, data.notes || null, id]);
-    return rows[0];
+  }
+
+  async deactivate(id, connection) {
+    await connection.execute("UPDATE companies SET status = 'INACTIVE' WHERE id = ?", [id]);
   }
 
   async visits(id, connection = pool) {
@@ -62,9 +82,9 @@ export class CompanyRepository {
 
   async audit(data, connection) {
     await connection.execute(
-      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address)
-       VALUES (?, ?, 'COMPANY', ?, ?, ?)`,
-      [data.userId, data.action || 'COMPANY_CREATED', String(data.companyId), JSON.stringify(data.after), data.ipAddress || null],
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address)
+       VALUES (?, ?, 'COMPANY', ?, ?, ?, ?)`,
+      [data.userId, data.action || 'COMPANY_CREATED', String(data.companyId), data.before ? JSON.stringify(data.before) : null, JSON.stringify(data.after), data.ipAddress || null],
     );
   }
 }
