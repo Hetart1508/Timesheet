@@ -43,25 +43,32 @@ Test gate: configure the dedicated test database, migrate, bootstrap an Admin, t
 
 ## Phase 3 — Agent timesheets
 
-- Agent dashboard and company lookup/creation
-- One daily timesheet, multiple manual-time visits, declaration and submission
-- Ownership enforcement, overlap validation and transactional audit history
-- Agent UI/API integration and tests
+- [x] Agent dashboard and company lookup/creation
+- [x] One daily timesheet, multiple manual-time visits, declaration and submission
+- [x] Ownership enforcement, overlap validation and transactional audit history
+- [x] Agent UI/API integration and focused tests
+- [ ] MySQL-backed create, edit, submit, correct and resubmit walkthrough completed
 
 Test gate: create, edit, submit, correct and resubmit using an Agent account.
 
 ## Phase 4 — Admin management
 
-- Agent/company administration
-- Timesheet review, approval/rejection/change requests
-- Audit viewer and authorization coverage
+- [x] Operations dashboard and pending-review queue
+- [x] Agent activation/deactivation with immediate session revocation
+- [x] Company approval and availability administration
+- [x] Timesheet review, approval/rejection/change requests
+- [x] Audit viewer and focused authorization/service coverage
+- [ ] Signed-in Admin browser walkthrough completed
 
 Test gate: Admin review flow plus negative Agent-authorization tests.
 
 ## Phase 5 — Analytics and exports
 
-- Database-backed daily/monthly/agent/company analytics
-- Filtered CSV and XLSX exports with formula-injection protection
+- [x] Database-backed daily/monthly/Agent/company analytics
+- [x] Date-scoped analytics UI with lightweight trend visualization
+- [x] Filtered visit-level CSV and XLSX exports
+- [x] Spreadsheet-formula injection protection and export audit events
+- [ ] Signed-in Admin analytics/export browser walkthrough completed
 
 Test gate: seeded aggregation assertions and export-content checks.
 

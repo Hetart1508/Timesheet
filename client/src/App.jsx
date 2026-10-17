@@ -10,6 +10,15 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import DashboardPage from './pages/shared/DashboardPage.jsx';
 import ProfilePage from './pages/shared/ProfilePage.jsx';
 import NotFoundPage from './pages/shared/NotFoundPage.jsx';
+import TimesheetHistoryPage from './pages/agent/TimesheetHistoryPage.jsx';
+import TimesheetPage from './pages/agent/TimesheetPage.jsx';
+import AdminTimesheetsPage from './pages/admin/AdminTimesheetsPage.jsx';
+import AdminReviewPage from './pages/admin/AdminReviewPage.jsx';
+import AdminAgentsPage from './pages/admin/AdminAgentsPage.jsx';
+import AdminCompaniesPage from './pages/admin/AdminCompaniesPage.jsx';
+import AuditLogPage from './pages/admin/AuditLogPage.jsx';
+import AnalyticsPage from './pages/admin/AnalyticsPage.jsx';
+import ExportCenterPage from './pages/admin/ExportCenterPage.jsx';
 
 export default function App() {
   return (
@@ -24,6 +33,19 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route element={<ProtectedRoute role="AGENT" />}>
+            <Route path="/timesheets" element={<TimesheetHistoryPage />} />
+            <Route path="/timesheets/:id" element={<TimesheetPage />} />
+          </Route>
+          <Route element={<ProtectedRoute role="ADMIN" />}>
+            <Route path="/admin/timesheets" element={<AdminTimesheetsPage />} />
+            <Route path="/admin/timesheets/:id" element={<AdminReviewPage />} />
+            <Route path="/admin/agents" element={<AdminAgentsPage />} />
+            <Route path="/admin/companies" element={<AdminCompaniesPage />} />
+            <Route path="/admin/audits" element={<AuditLogPage />} />
+            <Route path="/admin/analytics" element={<AnalyticsPage />} />
+            <Route path="/admin/exports" element={<ExportCenterPage />} />
+          </Route>
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<NotFoundPage />} />

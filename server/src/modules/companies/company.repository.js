@@ -43,11 +43,28 @@ export class CompanyRepository {
     return rows[0] || null;
   }
 
+  async update(id, data, connection) {
+    const [rows] = await connection.execute('SELECT * FROM companies WHERE id = ? FOR UPDATE', [id]);
+    if (!rows[0]) return null;
+    await connection.execute(`UPDATE companies SET company_name = ?, company_name_normalized = ?, address = ?, contact_person = ?, contact_phone = ?, notes = ? WHERE id = ?`,
+      [data.companyName, data.normalizedName, data.address, data.contactPerson || null, data.contactPhone || null, data.notes || null, id]);
+    return rows[0];
+  }
+
+  async visits(id, connection = pool) {
+    const [rows] = await connection.execute(`SELECT v.id, t.work_date, u.full_name agent_name, u.email agent_email,
+      v.contact_person, v.purpose, v.visit_notes, v.check_in_at, v.check_out_at,
+      TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at) duration_minutes
+      FROM visits v JOIN timesheets t ON t.id = v.timesheet_id JOIN users u ON u.id = t.agent_id
+      WHERE v.company_id = ? AND v.deleted_at IS NULL ORDER BY t.work_date DESC, v.check_in_at`, [id]);
+    return rows;
+  }
+
   async audit(data, connection) {
     await connection.execute(
       `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address)
        VALUES (?, ?, 'COMPANY', ?, ?, ?)`,
-      [data.userId, 'COMPANY_CREATED', String(data.companyId), JSON.stringify(data.after), data.ipAddress || null],
+      [data.userId, data.action || 'COMPANY_CREATED', String(data.companyId), JSON.stringify(data.after), data.ipAddress || null],
     );
   }
 }

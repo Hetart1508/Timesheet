@@ -52,4 +52,13 @@ export const templates = {
       html: layout('Timesheet ready for review', `<p>Hello ${escapeHtml(adminName)},</p><p style="line-height:1.7"><strong>${escapeHtml(agentName)}</strong> submitted a timesheet for ${escapeHtml(workDate)}.</p>`, actionButton('Review timesheet', url)),
     };
   },
+  timesheetReviewed({ agentName, workDate, decision, comment, url }) {
+    const label = decision === 'APPROVED' ? 'approved' : decision === 'REJECTED' ? 'rejected' : 'returned for changes';
+    const remarks = comment ? `\n\nReviewer comments: ${comment}` : '';
+    return {
+      subject: `Your timesheet for ${workDate} was ${label}`,
+      text: `Hello ${agentName},\n\nYour timesheet for ${workDate} was ${label}.${remarks}\n\nView it here:\n${url}`,
+      html: layout('Timesheet review completed', `<p>Hello ${escapeHtml(agentName)},</p><p style="line-height:1.7">Your timesheet for <strong>${escapeHtml(workDate)}</strong> was <strong>${escapeHtml(label)}</strong>.</p>${comment ? `<p style="line-height:1.7"><strong>Reviewer comments:</strong> ${escapeHtml(comment)}</p>` : ''}`, actionButton('View timesheet', url)),
+    };
+  },
 };

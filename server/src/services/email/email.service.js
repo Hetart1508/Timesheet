@@ -78,4 +78,13 @@ export class EmailService {
       developmentLink: url,
     });
   }
+
+  sendTimesheetReviewed(agent, timesheet) {
+    const url = `${this.config.APP_BASE_URL}/timesheets/${timesheet.id}`;
+    return this.sendTracked({
+      recipient: agent.email, type: 'TIMESHEET_REVIEWED', entityId: timesheet.id,
+      template: templates.timesheetReviewed({ agentName: agent.fullName, workDate: timesheet.workDate, decision: timesheet.decision, comment: timesheet.comment, url }),
+      developmentLink: url,
+    });
+  }
 }

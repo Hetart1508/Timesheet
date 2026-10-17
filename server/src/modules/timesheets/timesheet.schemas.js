@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const envelope = ({ body = z.object({}).strict(), params = z.object({}), query = z.object({}) }) => z.object({ body, params, query });
+const envelope = ({ body = z.object({}).strict().default({}), params = z.object({}), query = z.object({}) }) => z.object({ body, params, query });
 const id = z.coerce.number().int().positive();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use HH:mm');
@@ -45,4 +45,8 @@ export const createCompanySchema = envelope({
     contactPerson: z.string().trim().max(120).optional().default(''), contactPhone: z.string().trim().max(30).optional().default(''),
     notes: z.string().trim().max(2000).optional().default(''),
   }).strict(),
+});
+export const updateCompanySchema = envelope({
+  params: z.object({ id }),
+  body: createCompanySchema.shape.body,
 });

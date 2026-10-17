@@ -6,7 +6,7 @@ Development is intentionally phase-gated so the frontend, backend and database c
 
 ## Current checkpoint
 
-Phases 1 and 2 are implemented. The foundation, authentication service/API, public authentication pages, security controls, Brevo adapter, and Admin bootstrap are covered by automated tests. Database migration execution still requires a configured local MySQL application account.
+Phases 1–5 are implemented across the API and React UI, with the final signed-in browser walkthroughs still pending. The foundation, authentication, security controls, Agent workflow, Admin review and directory controls, analytics, secure CSV/XLSX exports, Brevo adapter, and Admin bootstrap are covered by automated tests. Local MySQL migrations have been verified through `002_email_verification_otp.sql`.
 
 ## Prerequisites
 
