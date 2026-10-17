@@ -103,6 +103,8 @@ button { cursor: pointer; }
 .profile-card { max-width: 620px; margin-top: 34px; }
 
 .dashboard-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; padding: 8px 0 24px; }
+.dashboard-actions { display: grid; grid-template-columns: minmax(150px, 1fr) auto; align-items: end; gap: 10px; }
+.dashboard-actions .primary-button { white-space: nowrap; }
 .dashboard-hero h1, .detail-heading h1 { margin: 0; color: #111827; font-size: clamp(2rem, 5vw, 3.7rem); letter-spacing: -.05em; }
 .dashboard-hero p:last-child, .detail-heading p:last-child { margin: 12px 0 0; color: var(--muted); line-height: 1.6; }
 .metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
@@ -132,6 +134,10 @@ button { cursor: pointer; }
 .empty-state h3 { margin: 10px 0 0; color: #374151; }
 .empty-state p { max-width: 440px; margin: 7px 0 0; line-height: 1.55; }
 .panel-loading { display: flex; align-items: center; justify-content: center; min-height: 220px; gap: 10px; color: var(--muted); }
+.request-error { display: grid; justify-items: center; gap: 12px; min-height: 220px; padding: 28px; text-align: center; border: 1px dashed #d6dbe3; border-radius: 10px; }
+.request-error p { max-width: 520px; margin: 0; color: var(--danger); line-height: 1.55; }
+.skip-link { position: absolute; top: -100px; left: 12px; z-index: 100; padding: 10px 14px; color: #fff; background: #1f2937; border-radius: 0 0 7px 7px; }
+.skip-link:focus { top: 0; }
 
 .filter-bar { display: grid; grid-template-columns: 1fr 1fr 1.15fr auto; align-items: end; gap: 12px; margin-bottom: 20px; }
 .filter-bar label { display: grid; gap: 7px; color: #374151; font-size: .78rem; font-weight: 750; }
@@ -257,7 +263,8 @@ button { cursor: pointer; }
   .topbar { align-items: center; }
   .topbar-account > span, .topbar-account > a, .topbar-account .text-button span { display: none; }
   .dashboard-hero { align-items: stretch; flex-direction: column; }
-  .dashboard-hero .primary-button { width: 100%; }
+  .dashboard-actions { grid-template-columns: 1fr; }
+  .dashboard-actions .primary-button { width: 100%; }
   .detail-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
   .visit-card { grid-template-columns: 1fr; }
   .visit-time { grid-template-columns: auto auto auto 1fr; align-items: baseline; gap: 7px; padding: 0 0 12px; border-right: 0; border-bottom: 1px solid var(--border); }

@@ -3,17 +3,19 @@ import { ArrowLeft, CheckCircle2, Clock3, History, Send, XCircle } from 'lucide-
 import { Link, useParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell.jsx';
 import Alert from '../../components/common/Alert.jsx';
+import RequestState from '../../components/common/RequestState.jsx';
 import StatusBadge from '../../components/common/StatusBadge.jsx';
 import { adminApi } from '../../api/admin.js';
 import { errorMessage } from '../../api/client.js';
 import { formatDuration, formatWorkDate } from '../../api/timesheets.js';
 
 export default function AdminReviewPage() {
-  const { id } = useParams(); const [sheet, setSheet] = useState(null); const [error, setError] = useState(''); const [success, setSuccess] = useState('');
+  const { id } = useParams(); const [sheet, setSheet] = useState(null); const [error, setError] = useState(''); const [loadError, setLoadError] = useState(''); const [success, setSuccess] = useState('');
   const [decision, setDecision] = useState(''); const [comment, setComment] = useState(''); const [busy, setBusy] = useState(false);
-  useEffect(() => { adminApi.getTimesheet(id).then(setSheet).catch((err) => setError(errorMessage(err))); }, [id]);
-  const review = async (event) => { event.preventDefault(); setBusy(true); setError(''); try { const updated = await adminApi.reviewTimesheet(id, decision, comment); setSheet(updated); setDecision(''); setComment(''); setSuccess('Review decision recorded.'); } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); } };
-  if (!sheet) return <AppShell><Alert>{error}</Alert><div className="panel-loading"><span className="spinner" /> Loading review…</div></AppShell>;
+  const load = () => { setSheet(null); setLoadError(''); return adminApi.getTimesheet(id).then(setSheet).catch((err) => setLoadError(errorMessage(err))); };
+  useEffect(() => { load(); }, [id]);
+  const review = async (event) => { event.preventDefault(); const label = decision === 'APPROVED' ? 'Approve' : decision === 'REJECTED' ? 'Reject' : 'Request changes for'; if (!window.confirm(`${label} ${sheet.agent.fullName}'s timesheet?`)) return; setBusy(true); setError(''); try { const updated = await adminApi.reviewTimesheet(id, decision, comment); setSheet(updated); setDecision(''); setComment(''); setSuccess('Review decision recorded.'); } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); } };
+  if (!sheet) return <AppShell><RequestState error={loadError} label="Loading review…" onRetry={load} /></AppShell>;
   const total = sheet.visits.reduce((sum, visit) => sum + visit.duration.minutes, 0);
   return <AppShell><Link className="back-link" to="/admin/timesheets"><ArrowLeft size={16} /> All timesheets</Link><section className="detail-heading"><div><p className="eyebrow">Timesheet review</p><h1>{sheet.agent.fullName}</h1><p>{formatWorkDate(sheet.workDate)} · @{sheet.agent.username} · {sheet.agent.email}</p></div><StatusBadge status={sheet.status} /></section><Alert>{error}</Alert><Alert type="success">{success}</Alert>
     <section className="metric-grid"><article className="metric-card"><Clock3 /><span>Total recorded</span><strong>{formatDuration({ minutes: total })}</strong></article><article className="metric-card"><CheckCircle2 /><span>Company visits</span><strong>{sheet.visits.length}</strong></article><article className="metric-card"><Send /><span>Submitted</span><strong>{sheet.submittedAt ? new Date(sheet.submittedAt).toLocaleString() : 'Not submitted'}</strong></article></section>

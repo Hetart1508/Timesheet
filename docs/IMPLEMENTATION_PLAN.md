@@ -44,7 +44,7 @@ Test gate: configure the dedicated test database, migrate, bootstrap an Admin, t
 ## Phase 3 — Agent timesheets
 
 - [x] Agent dashboard and company lookup/creation
-- [x] One daily timesheet, multiple manual-time visits, declaration and submission
+- [x] Select a work date, then maintain one daily timesheet with multiple company visits and manual in/out times
 - [x] Ownership enforcement, overlap validation and transactional audit history
 - [x] Agent UI/API integration and focused tests
 - [ ] MySQL-backed create, edit, submit, correct and resubmit walkthrough completed
@@ -74,11 +74,13 @@ Test gate: seeded aggregation assertions and export-content checks.
 
 ## Phase 6 — UI refinement
 
-- Responsive desktop/mobile shell, accessible controls and focus handling
-- Loading, empty, failure and confirmation states
-- No placeholder production data or inert actions
+- [x] Responsive desktop/mobile shell, accessible controls, skip navigation, and mobile-menu focus handling
+- [x] Loading, empty, failure/retry, and confirmation states across Agent and Admin workflows
+- [x] No placeholder production data or inert actions in the implemented workflows
+- [x] Full workspace tests (39 server tests and 10 client tests) and production client build
+- [ ] Signed-in desktop/mobile browser walkthroughs for both roles; local test sessions are not available yet
 
-Test gate: desktop and mobile browser walkthroughs for both roles.
+Test gate: desktop and mobile browser walkthroughs for both roles. The browser currently verifies the public sign-in screen; the authenticated role walkthrough remains open until local test sessions are available.
 
 ## Phase 7 — Final verification and documentation
 

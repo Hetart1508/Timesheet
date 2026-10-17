@@ -3,6 +3,7 @@ import { ArrowLeft, Building2, Check, Edit3, Plus, Send, Trash2, X } from 'lucid
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell.jsx';
 import Alert from '../../components/common/Alert.jsx';
+import RequestState from '../../components/common/RequestState.jsx';
 import StatusBadge from '../../components/common/StatusBadge.jsx';
 import { agentApi, formatDuration, formatWorkDate } from '../../api/timesheets.js';
 import { errorMessage, fieldErrors } from '../../api/client.js';
@@ -64,8 +65,7 @@ export default function TimesheetPage() {
     catch (requestError) { setError(errorMessage(requestError)); } finally { setBusy(''); }
   };
 
-  if (!sheet && !error) return <AppShell><div className="panel-loading"><span className="spinner" /> Loading timesheet…</div></AppShell>;
-  if (!sheet) return <AppShell><Alert>{error}</Alert><button className="secondary-button" onClick={() => navigate('/timesheets')}>Back to history</button></AppShell>;
+  if (!sheet) return <AppShell><RequestState error={error} label="Loading timesheet…" onRetry={load} /><button className="secondary-button" onClick={() => navigate('/timesheets')}>Back to history</button></AppShell>;
 
   return <AppShell>
     <Link className="back-link" to="/timesheets"><ArrowLeft size={16} /> All timesheets</Link>
