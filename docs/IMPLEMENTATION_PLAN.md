@@ -77,20 +77,20 @@ Test gate: seeded aggregation assertions and export-content checks.
 - [x] Responsive desktop/mobile shell, accessible controls, skip navigation, and mobile-menu focus handling
 - [x] Loading, empty, failure/retry, and confirmation states across Agent and Admin workflows
 - [x] No placeholder production data or inert actions in the implemented workflows
-- [x] Full workspace tests (39 server tests and 11 client tests) and production client build
+- [x] Full workspace tests (48 server tests and 17 client tests) and production client build
 - [ ] Signed-in desktop/mobile browser walkthroughs for both roles; local test sessions are not available yet
 
 Test gate: desktop and mobile browser walkthroughs for both roles. The browser currently verifies the public sign-in screen; the authenticated role walkthrough remains open until local test sessions are available.
 
 ## Phase 7 — Final verification and documentation
 
-- [x] Complete automated suite (39 server tests and 11 client tests) and production build
+- [x] Complete automated suite (48 server tests and 17 client tests) and production build
 - [x] Verify both local migrations report `UP`
 - [x] Update API, database, security, deployment, and setup documentation
 - [x] Record that Brevo tests use mocked HTTP responses and live delivery is unverified
-- [ ] Clean install following only the README; not run to avoid replacing dependencies under the active dev server
+- [x] Run a clean lockfile install, full tests, and production build in an isolated copy; the active development install was untouched
 
-Test gate: clean install following only the README. Migration, test, build, and documentation checks passed; the clean-install gate remains open.
+Test gate: clean install following the README. The clean install, automated suite, and build passed in isolation; both local migrations report `UP`. Signed-in role walkthroughs and live Brevo delivery remain separate environment-dependent verification items.
 
 ## Reference project decisions
 

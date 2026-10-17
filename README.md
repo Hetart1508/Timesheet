@@ -6,7 +6,7 @@ Development is intentionally phase-gated so the frontend, backend and database c
 
 ## Current checkpoint
 
-Phases 1–6 are implemented across the API and React UI. Automated server/client tests, the production client build, and both local MySQL migrations have been verified. Signed-in desktop/mobile walkthroughs for both roles remain pending; browser checks so far cover the public sign-in screen and the mobile viewport.
+Phases 1–7 are implemented across the API and React UI. A clean lockfile install, all automated server/client tests, the production client build, and both local MySQL migrations have been verified. Signed-in desktop/mobile walkthroughs for both roles remain pending; browser checks so far cover the public sign-in screen and the mobile viewport.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Phases 1–6 are implemented across the API and React UI. Automated server/clien
 ## 1. Install
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 ```
 

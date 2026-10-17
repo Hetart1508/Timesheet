@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Building2, Check, Edit3, Plus, Send, Trash2, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell.jsx';
@@ -14,22 +14,62 @@ const emptyCompany = { companyName: '', address: '', contactPerson: '', contactP
 export default function TimesheetPage() {
   const { id } = useParams(); const navigate = useNavigate();
   const [sheet, setSheet] = useState(null); const [companies, setCompanies] = useState([]);
+  const [companySuggestions, setCompanySuggestions] = useState([]);
   const [summary, setSummary] = useState(''); const [visit, setVisit] = useState(emptyVisit);
   const [editingVisitId, setEditingVisitId] = useState(null); const [showVisitForm, setShowVisitForm] = useState(false);
   const [showCompanyForm, setShowCompanyForm] = useState(false); const [company, setCompany] = useState(emptyCompany);
-  const [companySearch, setCompanySearch] = useState(''); const [error, setError] = useState(''); const [success, setSuccess] = useState('');
+  const [companySearch, setCompanySearch] = useState(''); const [companySearchActive, setCompanySearchActive] = useState(false); const [companiesLoading, setCompaniesLoading] = useState(true); const [companiesError, setCompaniesError] = useState(''); const [companyMatchCount, setCompanyMatchCount] = useState(null);
+  const [error, setError] = useState(''); const [success, setSuccess] = useState('');
   const [errors, setErrors] = useState({}); const [busy, setBusy] = useState('');
+  const companySearchRequest = useRef(0);
 
   const load = useCallback(async () => {
     setError('');
     try { const value = await agentApi.getTimesheet(id); setSheet(value); setSummary(value.dailySummary); }
     catch (requestError) { setError(errorMessage(requestError)); }
   }, [id]);
-  const loadCompanies = useCallback(async (search = '') => {
-    try { setCompanies(await agentApi.listCompanies(search)); } catch (requestError) { setError(errorMessage(requestError)); }
+  const loadCompanies = useCallback(async (search = '', selectedCompany = null) => {
+    const requestId = ++companySearchRequest.current;
+    setCompaniesLoading(true); setCompaniesError(''); setCompanyMatchCount(null);
+    try {
+      const matches = await agentApi.listCompanies(search);
+      if (requestId !== companySearchRequest.current) return;
+      setCompanySuggestions(matches);
+      const selectedMatches = selectedCompany && !matches.some((item) => String(item.id) === String(selectedCompany.id))
+        ? [...matches, selectedCompany]
+        : matches;
+      setCompanies(selectedMatches);
+      setCompanyMatchCount(matches.length);
+    } catch (requestError) {
+      if (requestId === companySearchRequest.current) setCompaniesError(errorMessage(requestError));
+    } finally {
+      if (requestId === companySearchRequest.current) setCompaniesLoading(false);
+    }
   }, []);
   useEffect(() => { load(); loadCompanies(); }, [load, loadCompanies]);
   const selectedCompany = useMemo(() => companies.find((item) => String(item.id) === String(visit.companyId)), [companies, visit.companyId]);
+  const selectedCompanyRef = useRef(selectedCompany);
+  selectedCompanyRef.current = selectedCompany;
+
+  useEffect(() => {
+    if (!showVisitForm || !companySearchActive) return undefined;
+    const timeoutId = window.setTimeout(() => loadCompanies(companySearch.trim(), selectedCompanyRef.current), 500);
+    return () => window.clearTimeout(timeoutId);
+  }, [companySearch, companySearchActive, loadCompanies, showVisitForm]);
+
+  const searchCompaniesNow = () => {
+    setCompanySearchActive(false);
+    loadCompanies(companySearch.trim(), selectedCompany);
+  };
+  const updateCompanySearch = (value) => {
+    setCompanySearch(value);
+    setCompanySearchActive(true);
+    setCompaniesLoading(true);
+    setCompaniesError('');
+    setCompanyMatchCount(null);
+    setCompanySuggestions([]);
+    setCompanies(selectedCompany ? [selectedCompany] : []);
+  };
 
   const applyResult = (value, message) => { setSheet(value); setSummary(value.dailySummary); setSuccess(message); setError(''); setErrors({}); };
   const saveSummary = async () => {
@@ -55,7 +95,7 @@ export default function TimesheetPage() {
   };
   const createCompany = async (event) => {
     event.preventDefault(); setBusy('company'); setError(''); setErrors({});
-    try { const created = await agentApi.createCompany(company); setCompanies((current) => [created, ...current]); setVisit({ ...visit, companyId: String(created.id), contactPerson: created.contactPerson || visit.contactPerson }); setCompany(emptyCompany); setShowCompanyForm(false); setSuccess('Company created and selected.'); }
+    try { const created = await agentApi.createCompany(company); companySearchRequest.current += 1; setCompanySearch(created.companyName); setCompanySearchActive(false); setCompanies([created]); setCompanySuggestions([created]); setCompaniesLoading(false); setCompaniesError(''); setCompanyMatchCount(1); setVisit({ ...visit, companyId: String(created.id), contactPerson: created.contactPerson || visit.contactPerson }); setCompany(emptyCompany); setShowCompanyForm(false); setSuccess('Company created and selected.'); }
     catch (requestError) { setErrors(fieldErrors(requestError)); setError(errorMessage(requestError)); } finally { setBusy(''); }
   };
   const submit = async () => {
@@ -76,7 +116,7 @@ export default function TimesheetPage() {
     {showVisitForm ? <section className="content-card form-card section-block">
       <div className="section-heading"><div><p className="eyebrow">{editingVisitId ? 'Edit visit' : 'New visit'}</p><h2>Visit details</h2></div><button className="icon-button" aria-label="Close visit form" onClick={resetVisit}><X /></button></div>
       <form className="business-form" onSubmit={saveVisit}>
-        <div className="company-picker"><label className="field"><span>Company</span><div className="search-control"><input placeholder="Search companies" value={companySearch} onChange={(e) => setCompanySearch(e.target.value)} /><button type="button" className="secondary-button" onClick={() => loadCompanies(companySearch)}>Search</button></div><select required value={visit.companyId} onChange={(e) => { const value = e.target.value; const selected = companies.find((item) => String(item.id) === value); setVisit({ ...visit, companyId: value, contactPerson: visit.contactPerson || selected?.contactPerson || '' }); }}><option value="">Select a company</option>{companies.map((item) => <option value={item.id} key={item.id}>{item.companyName}{item.reviewStatus === 'PENDING' ? ' (pending review)' : ''}</option>)}</select>{errors.companyId ? <small className="field-error">{errors.companyId}</small> : null}</label><button type="button" className="text-action" onClick={() => setShowCompanyForm(!showCompanyForm)}><Plus size={16} /> Add a new company</button></div>
+        <div className="company-picker"><label className="field"><span>Company</span><div className="search-control"><input aria-label="Search companies" type="search" maxLength="100" placeholder="Search companies" value={companySearch} onChange={(e) => updateCompanySearch(e.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); searchCompaniesNow(); } }} /><button type="button" className="secondary-button" disabled={companiesLoading} onClick={searchCompaniesNow}>{companiesLoading ? 'Searching…' : 'Search'}</button></div>{companySearch.trim() && companySuggestions.length ? <div className="company-suggestions" role="group" aria-label="Company suggestions">{companySuggestions.slice(0, 5).map((item) => <button type="button" className="company-suggestion" aria-pressed={String(visit.companyId) === String(item.id)} key={item.id} onClick={() => { setVisit({ ...visit, companyId: String(item.id), contactPerson: visit.contactPerson || item.contactPerson || '' }); setCompanySearch(item.companyName); setCompanySearchActive(false); setCompanySuggestions([]); }}><strong>{item.companyName}</strong><small>{item.address}</small></button>)}</div> : null}<select aria-label="Company" required disabled={companiesLoading || companies.length === 0} value={visit.companyId} onChange={(e) => { const value = e.target.value; const selected = companies.find((item) => String(item.id) === value); setVisit({ ...visit, companyId: value, contactPerson: visit.contactPerson || selected?.contactPerson || '' }); }}><option value="">Select a company</option>{companies.map((item) => <option value={item.id} key={item.id}>{item.companyName}{item.reviewStatus === 'PENDING' ? ' (pending review)' : ''}</option>)}</select>{companiesLoading ? <small role="status">Searching available companies…</small> : companiesError ? <small className="field-error" role="alert">{companiesError}</small> : companyMatchCount === 0 ? <small role="status">{companySearch ? `No companies match “${companySearch}”.` : 'No active companies found.'} Add a new company if it is missing.</small> : companyMatchCount !== null ? <small role="status">{companyMatchCount} {companyMatchCount === 1 ? 'company' : 'companies'} found.</small> : null}{errors.companyId ? <small className="field-error">{errors.companyId}</small> : null}</label><button type="button" className="text-action" onClick={() => setShowCompanyForm(!showCompanyForm)}><Plus size={16} /> Add a new company</button></div>
         {selectedCompany ? <p className="selection-note"><Building2 size={16} /> {selectedCompany.address}</p> : null}
         <div className="two-fields"><label className="field"><span>Check-in time</span><input type="time" required value={visit.checkInTime} onChange={(e) => setVisit({ ...visit, checkInTime: e.target.value })} />{errors.checkInTime ? <small className="field-error">{errors.checkInTime}</small> : null}</label><label className="field"><span>Check-out time</span><input type="time" required value={visit.checkOutTime} onChange={(e) => setVisit({ ...visit, checkOutTime: e.target.value })} />{errors.checkOutTime ? <small className="field-error">{errors.checkOutTime}</small> : null}</label></div>
         <label className="field"><span>Contact person</span><input required minLength="2" maxLength="120" value={visit.contactPerson} onChange={(e) => setVisit({ ...visit, contactPerson: e.target.value })} /></label>

@@ -158,6 +158,12 @@ button { cursor: pointer; }
 .company-picker { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px; }
 .search-control { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .search-control .secondary-button { min-height: 47px; }
+.company-suggestions { display: grid; max-height: 220px; overflow-y: auto; margin-top: 6px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.company-suggestion { display: grid; gap: 3px; padding: 10px 12px; color: #374151; text-align: left; background: #fff; border: 0; border-bottom: 1px solid #edf0f4; }
+.company-suggestion:last-child { border-bottom: 0; }
+.company-suggestion:hover, .company-suggestion:focus-visible { background: #f3f8ff; }
+.company-suggestion strong { font-size: .85rem; }
+.company-suggestion small { color: var(--muted); font-size: .75rem; }
 .text-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 0; color: var(--primary-dark); background: none; border: 0; font-weight: 750; }
 .selection-note { display: flex; align-items: center; gap: 8px; margin: -5px 0 0; color: var(--muted); font-size: .84rem; }
 .nested-form { border-color: #bedcff; box-shadow: 0 16px 40px rgba(79,156,249,.09); }
