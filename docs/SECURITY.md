@@ -11,7 +11,8 @@
 ## Authentication and authorization
 
 - Passwords use Argon2id. Passwords must be at least 12 characters by default.
-- Public registration always creates an Agent; the request cannot assign a role. The first Admin is created only by the guarded `npm run admin:bootstrap` command, which refuses to run once an Admin exists.
+- Agent registration always creates an Agent; the request cannot assign a role. The dedicated Admin setup endpoint can create only the first Admin, requires email OTP verification, and a database uniqueness constraint prevents a second Admin. The guarded `npm run admin:bootstrap` command remains available for non-web initial setup and also refuses to run once an Admin exists.
+- Agent and Admin sign-in are separate. The Agent endpoint rejects Admin accounts. Admin sign-in accepts email only, validates the password and `ADMIN` database role, then requires a single-use, expiring email OTP before creating a session. Incorrect OTP attempts are limited and verified Admin sign-ins are audited.
 - Access and opaque refresh credentials are held in HttpOnly cookies. Refresh tokens are hashed in storage, rotated on refresh, and reuse detection revokes the affected session. Cookies use `SameSite=Lax`; production must use HTTPS and `COOKIE_SECURE=true`.
 - A readable CSRF cookie is echoed in `X-CSRF-Token` for protected mutations. The UI does not store JWTs or refresh tokens in web storage.
 - Authorization checks the active account and role on protected API requests. Deactivating an Agent revokes existing sessions.

@@ -16,6 +16,7 @@ export const visitSchema = envelope({
   params: z.object({ id }),
   body: z.object({
     companyId: id,
+    category: z.enum(['Gold', 'Silver', 'Bronze']),
     contactPerson: z.string().trim().min(2).max(120),
     purpose: z.string().trim().min(2).max(500),
     visitNotes: z.string().trim().min(2).max(5000),

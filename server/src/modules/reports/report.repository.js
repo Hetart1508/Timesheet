@@ -49,7 +49,7 @@ export class ReportRepository {
     if (filters.endDate) { where.push('t.work_date <= ?'); values.push(filters.endDate); }
     const [rows] = await connection.execute(`SELECT t.id timesheet_id, t.work_date, t.status, t.submitted_at, t.review_comment,
       u.full_name agent_name, u.email agent_email, v.company_name_snapshot company_name,
-      v.contact_person, v.purpose, v.visit_notes, v.check_in_at, v.check_out_at,
+      v.category, v.contact_person, v.purpose, v.visit_notes, v.check_in_at, v.check_out_at,
       CASE WHEN v.id IS NULL THEN 0 ELSE TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at) END duration_minutes
       FROM timesheets t JOIN users u ON u.id = t.agent_id
       LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL

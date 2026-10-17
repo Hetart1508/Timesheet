@@ -4,14 +4,14 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 const agentLinks = [
-  ['/dashboard', 'Dashboard', LayoutDashboard], ['/timesheets', 'Timesheet history', History],
-  ['/companies', 'Company directory', Building2], ['/profile', 'Profile & security', UserRound],
+  ['/dashboard', 'Home', LayoutDashboard], ['/timesheets', 'Timesheets', History],
+  ['/companies', 'Companies', Building2], ['/profile', 'Account & security', UserRound],
 ];
 const adminLinks = [
-  ['/dashboard', 'Admin overview', LayoutDashboard], ['/admin/timesheets?status=SUBMITTED', 'Review queue', FileCheck2],
-  ['/admin/timesheets', 'All timesheets', CalendarDays], ['/admin/agents', 'Agent directory', Users],
-  ['/admin/companies', 'Company directory', Building2], ['/admin/analytics', 'Analytics & reports', BarChart3],
-  ['/admin/exports', 'Export center', Download], ['/admin/audits', 'Audit logs', ShieldCheck], ['/profile', 'Profile & security', UserRound],
+  ['/dashboard', 'Home', LayoutDashboard], ['/admin/timesheets?status=SUBMITTED', 'Reviews', FileCheck2],
+  ['/admin/timesheets', 'Timesheets', CalendarDays], ['/admin/agents', 'Agents', Users],
+  ['/admin/companies', 'Companies', Building2], ['/admin/analytics', 'Reports', BarChart3],
+  ['/admin/exports', 'Exports', Download], ['/admin/audits', 'Audit log', ShieldCheck], ['/profile', 'Account & security', UserRound],
 ];
 
 export default function AppShell({ children }) {
@@ -27,5 +27,5 @@ export default function AppShell({ children }) {
     closeButtonRef.current?.focus();
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [open]);
-  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to content</a><header className="topbar"><Link className="brand" to="/dashboard"><span className="brand-mark"><Clock3 size={21} /></span><span>Timesheet</span></Link><div className="topbar-account"><span><small>{user.role}</small>{user.fullName}</span><Link aria-label="Profile" to="/profile"><UserRound /></Link><button className="text-button" onClick={signOut}><LogOut /> <span>Sign out</span></button><button ref={menuButtonRef} className="mobile-menu" aria-label="Open navigation" aria-expanded={open} aria-controls="app-navigation" onClick={() => setOpen(true)}><Menu /></button></div></header>{open ? <button className="sidebar-backdrop" aria-label="Dismiss navigation" onClick={closeNavigation} /> : null}<div className="shell-body"><aside id="app-navigation" className={`sidebar ${open ? 'open' : ''}`}><div className="sidebar-mobile-head"><strong>Navigation</strong><button ref={closeButtonRef} className="icon-button" aria-label="Close navigation" onClick={closeNavigation}><X /></button></div><p>{user.role === 'ADMIN' ? 'Administration portal' : 'Agent field work'}</p><nav aria-label="Primary navigation">{links.map(([to, label, Icon]) => <NavLink key={`${to}-${label}`} to={to} end={to === '/dashboard'} onClick={closeNavigation} className={({ isActive }) => isActive ? 'active' : ''}><Icon /> {label}</NavLink>)}</nav><div className="access-card"><i className={user.role === 'ADMIN' ? 'admin' : ''} /><strong>{user.role === 'ADMIN' ? 'Admin access' : 'Verified Agent'}</strong><span>{user.role === 'ADMIN' ? 'Reviews, directory controls, analytics, and exports unlocked.' : 'Daily visit logging and submissions are active.'}</span></div></aside><main id="main-content" className="workspace" tabIndex="-1">{children}</main></div></div>;
+  return <div className="app-shell"><a className="skip-link" href="#main-content">Skip to content</a><header className="topbar"><Link className="brand" to="/dashboard"><span className="brand-mark"><Clock3 size={21} /></span><span>Timesheet</span></Link><div className="topbar-account"><span><small>{user.role === 'ADMIN' ? 'Administrator' : 'Agent'}</small>{user.fullName}</span><Link aria-label="Account settings" to="/profile"><UserRound /></Link><button className="text-button" onClick={signOut}><LogOut /> <span>Sign out</span></button><button ref={menuButtonRef} className="mobile-menu" aria-label="Open navigation" aria-expanded={open} aria-controls="app-navigation" onClick={() => setOpen(true)}><Menu /></button></div></header>{open ? <button className="sidebar-backdrop" aria-label="Dismiss navigation" onClick={closeNavigation} /> : null}<div className="shell-body"><aside id="app-navigation" className={`sidebar ${open ? 'open' : ''}`}><div className="sidebar-mobile-head"><strong>Menu</strong><button ref={closeButtonRef} className="icon-button" aria-label="Close navigation" onClick={closeNavigation}><X /></button></div><p>{user.role === 'ADMIN' ? 'Admin workspace' : 'My workspace'}</p><nav aria-label="Primary navigation">{links.map(([to, label, Icon]) => <NavLink key={`${to}-${label}`} to={to} end={to === '/dashboard'} onClick={closeNavigation} className={({ isActive }) => isActive ? 'active' : ''}><Icon /> {label}</NavLink>)}</nav><div className="access-card"><i className={user.role === 'ADMIN' ? 'admin' : ''} /><strong>{user.role === 'ADMIN' ? 'Admin access' : 'Agent access'}</strong><span>{user.role === 'ADMIN' ? 'Review and reporting tools' : 'Visit logging is ready'}</span></div></aside><main id="main-content" className="workspace" tabIndex="-1">{children}</main></div></div>;
 }

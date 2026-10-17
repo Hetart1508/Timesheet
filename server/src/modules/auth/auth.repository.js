@@ -75,7 +75,7 @@ export class AuthRepository {
   async consumeVerificationOtp(emailNormalized, tokenHash, maxAttempts, connection) {
     const [rows] = await connection.execute(
       `SELECT evt.id, evt.user_id, evt.token_hash, evt.expires_at, evt.consumed_at, evt.attempt_count,
-              u.email, u.full_name, u.is_email_verified
+              u.email, u.full_name, u.role, u.is_email_verified
        FROM email_verification_tokens evt JOIN users u ON u.id = evt.user_id
        WHERE u.email_normalized = ? ORDER BY evt.created_at DESC LIMIT 1 FOR UPDATE`, [emailNormalized],
     );
@@ -93,6 +93,38 @@ export class AuthRepository {
     await connection.execute('UPDATE email_verification_tokens SET consumed_at = UTC_TIMESTAMP(6) WHERE id = ?', [token.id]);
     await connection.execute('UPDATE users SET is_email_verified = TRUE WHERE id = ?', [token.user_id]);
     return token;
+  }
+
+  async replaceAdminLoginChallenge(id, userId, tokenHash, expiresAt, connection) {
+    await connection.execute('DELETE FROM admin_login_challenges WHERE user_id = ? AND consumed_at IS NULL', [userId]);
+    await connection.execute(
+      'INSERT INTO admin_login_challenges (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)',
+      [id, userId, tokenHash, expiresAt],
+    );
+  }
+
+  async consumeAdminLoginOtp(challengeId, emailNormalized, tokenHash, maxAttempts, connection) {
+    const [rows] = await connection.execute(
+      `SELECT alc.id, alc.user_id, alc.token_hash, alc.expires_at, alc.consumed_at, alc.attempt_count,
+              u.full_name, u.username, u.email, u.role, u.is_email_verified, u.status
+       FROM admin_login_challenges alc JOIN users u ON u.id = alc.user_id
+       WHERE alc.id = ? AND u.email_normalized = ? FOR UPDATE`,
+      [challengeId, emailNormalized],
+    );
+    const challenge = rows[0];
+    if (!challenge || challenge.consumed_at || new Date(challenge.expires_at) <= new Date()
+      || challenge.attempt_count >= maxAttempts || challenge.role !== 'ADMIN'
+      || !challenge.is_email_verified || challenge.status !== 'ACTIVE') return { invalid: true };
+    if (!timingSafeEqual(challenge.token_hash, tokenHash)) {
+      const attempts = Number(challenge.attempt_count) + 1;
+      await connection.execute(
+        'UPDATE admin_login_challenges SET attempt_count = ?, consumed_at = IF(? >= ?, UTC_TIMESTAMP(6), consumed_at) WHERE id = ?',
+        [attempts, attempts, maxAttempts, challenge.id],
+      );
+      return { invalid: true };
+    }
+    await connection.execute('UPDATE admin_login_challenges SET consumed_at = UTC_TIMESTAMP(6) WHERE id = ?', [challenge.id]);
+    return challenge;
   }
 
   async replaceResetToken(userId, tokenHash, expiresAt, connection) {

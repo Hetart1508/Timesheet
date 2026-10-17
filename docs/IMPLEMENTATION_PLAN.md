@@ -29,7 +29,7 @@ Expected URLs: frontend `http://localhost:5173`, API liveness `http://localhost:
 ## Phase 2 — Authentication and security
 
 - [x] Agent-only registration and single-use six-digit email OTP verification
-- [x] Login by username/email, HttpOnly access cookie, opaque refresh rotation
+- [x] Agent login by verified email, HttpOnly access cookie, opaque refresh rotation
 - [x] CSRF protection, origin validation, rate limits, logout/session revocation
 - [x] Forgot/reset/change password and session revocation
 - [x] Brevo transactional email plus explicit development email mode
@@ -75,6 +75,8 @@ Test gate: seeded aggregation assertions and export-content checks.
 ## Phase 6 — UI refinement
 
 - [x] Responsive desktop/mobile shell, accessible controls, skip navigation, and mobile-menu focus handling
+- [x] Elder-friendly Agent workflow with plain-language steps, readable type, large touch targets, and reduced visual clutter
+- [x] Shared searchable company directory with contact details and visit history
 - [x] Loading, empty, failure/retry, and confirmation states across Agent and Admin workflows
 - [x] No placeholder production data or inert actions in the implemented workflows
 - [x] Full workspace tests (48 server tests and 17 client tests) and production client build

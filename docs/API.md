@@ -37,9 +37,12 @@ All paths below are under `/api/v1/auth`.
 | Method | Path | Access | Description |
 | --- | --- | --- | --- |
 | POST | `/register` | Public, rate-limited | Creates an Agent account and sends a verification code. The role is never accepted from the client. |
+| POST | `/register-admin` | Public, rate-limited | Creates the system’s only Admin account and sends an email verification code. Database constraints reject a second Admin. |
 | POST | `/verify-email` | Public, rate-limited | Verifies `{ "email": "agent@example.com", "otp": "123456" }`. |
 | POST | `/resend-verification` | Public, rate-limited | Sends a replacement code when the account is eligible. |
-| POST | `/login` | Public, rate-limited | Accepts username/email and password; sets session cookies. |
+| POST | `/login` | Public, rate-limited | Agent-only login using verified email and password; sets session cookies. Admin accounts are rejected. |
+| POST | `/admin-login/request` | Public, rate-limited | Validates Admin email/password and emails a single-use OTP; does not create a session. |
+| POST | `/admin-login/verify` | Public, rate-limited | Validates the Admin login challenge, email, and OTP; consumes the OTP and creates the Admin session. |
 | POST | `/refresh` | Refresh cookie + CSRF | Rotates the refresh session and access cookie. |
 | POST | `/logout` | CSRF | Revokes the current refresh session and clears cookies. |
 | POST | `/logout-all` | Authenticated + CSRF | Revokes every session for the current user. |
@@ -61,7 +64,7 @@ All routes are under `/api/v1/agent` and require an active Agent session. A dail
 | POST | `/timesheets` | Agent + CSRF | Create or open the daily sheet for optional `workDate`. |
 | GET | `/timesheets/:id` | Owning Agent | Sheet declaration, visits, and review details. |
 | PUT | `/timesheets/:id` | Owning Agent + CSRF | Save `{ "dailySummary": "..." }`. |
-| POST | `/timesheets/:id/visits` | Owning Agent + CSRF | Add a company visit with company, contact, purpose, notes, `checkInTime`, and `checkOutTime` (`HH:mm`). |
+| POST | `/timesheets/:id/visits` | Owning Agent + CSRF | Add a company visit with company, category (`Gold`, `Silver`, or `Bronze`), contact, purpose, notes, `checkInTime`, and `checkOutTime` (`HH:mm`). |
 | PUT | `/visits/:id` | Owning Agent + CSRF | Edit a visit. |
 | DELETE | `/visits/:id` | Owning Agent + CSRF | Soft-delete a visit. |
 | POST | `/timesheets/:id/submit` | Owning Agent + CSRF | Submit the daily sheet for review. |

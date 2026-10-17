@@ -17,6 +17,13 @@ const layout = (heading, content, action) => `<!doctype html>
 const actionButton = (label, url) => `<p style="margin:24px 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:#4f9cf9;color:#fff;text-decoration:none;padding:12px 18px;border-radius:9px;font-weight:700">${label}</a></p>`;
 
 export const templates = {
+  adminLogin({ name, otp, expiresInMinutes }) {
+    return {
+      subject: `${otp} is your Admin sign-in code`,
+      text: `Hello ${name},\n\nUse ${otp} to finish signing in to the Timesheet Admin portal. It expires in ${expiresInMinutes} minutes and can be used once.`,
+      html: layout('Confirm your Admin sign-in', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Enter this one-time security code to finish signing in to the Admin portal. It expires in ${expiresInMinutes} minutes.</p><div style="margin:24px 0;padding:16px;text-align:center;background:#eef6ff;border-radius:10px;color:#1f2937;font-size:32px;font-weight:800;letter-spacing:10px">${escapeHtml(otp)}</div>`),
+    };
+  },
   verification({ name, otp, expiresInMinutes }) {
     return {
       subject: `${otp} is your Timesheet verification code`,
@@ -24,11 +31,12 @@ export const templates = {
       html: layout('Verify your email', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Enter this one-time code in Timesheet Management. It expires in ${expiresInMinutes} minutes.</p><div style="margin:24px 0;padding:16px;text-align:center;background:#eef6ff;border-radius:10px;color:#1f2937;font-size:32px;font-weight:800;letter-spacing:10px">${escapeHtml(otp)}</div>`),
     };
   },
-  welcome({ name }) {
+  welcome({ name, role }) {
+    const admin = role === 'ADMIN';
     return {
       subject: 'Welcome to Timesheet Management',
-      text: `Hello ${name},\n\nYour email is verified. You can now sign in to Timesheet Management.`,
-      html: layout('Your account is ready', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Your email has been verified. You can now sign in and create your daily timesheets.</p>`),
+      text: `Hello ${name},\n\nYour ${admin ? 'Admin' : 'Agent'} email is verified. You can now sign in to Timesheet Management.`,
+      html: layout('Your account is ready', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Your ${admin ? 'Admin' : 'Agent'} email has been verified. You can now sign in to Timesheet Management.</p>`),
     };
   },
   passwordReset({ name, url }) {

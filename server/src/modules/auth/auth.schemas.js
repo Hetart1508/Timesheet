@@ -18,9 +18,22 @@ export const registrationSchema = body({
   message: 'Passwords do not match',
 });
 
+export const adminRegistrationSchema = registrationSchema;
+
 export const loginSchema = body({
-  identifier: z.string().trim().min(1).max(254),
+  email: z.string().trim().email().max(254),
   password: z.string().min(1).max(128),
+});
+
+export const adminLoginRequestSchema = body({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(1).max(128),
+});
+
+export const adminLoginVerifySchema = body({
+  challengeId: z.string().uuid(),
+  email: z.string().trim().email().max(254),
+  otp: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code'),
 });
 
 export const verifyOtpSchema = body({

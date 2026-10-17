@@ -23,7 +23,7 @@ export class TimesheetService {
       reviewComment: row.review_comment || null,
       visits: row.visits.map((visit) => ({
         id: Number(visit.id), companyId: Number(visit.company_id), companyName: visit.company_name_snapshot,
-        contactPerson: visit.contact_person, purpose: visit.purpose, visitNotes: visit.visit_notes,
+        category: visit.category, contactPerson: visit.contact_person, purpose: visit.purpose, visitNotes: visit.visit_notes,
         checkInTime: utcToIstTime(visit.check_in_at), checkOutTime: utcToIstTime(visit.check_out_at),
         duration: minutesLabel(visit.duration_minutes),
       })),

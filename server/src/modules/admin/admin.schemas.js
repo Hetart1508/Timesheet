@@ -7,7 +7,9 @@ const paging = { page: z.coerce.number().int().positive().default(1), pageSize: 
 
 export const adminTimesheetListSchema = envelope({ query: z.object({
   status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED']).optional(),
-  agentId: id.optional(), startDate: date.optional(), endDate: date.optional(), ...paging,
+  agentId: id.optional(), startDate: date.optional(), endDate: date.optional(), search: z.string().trim().max(100).default(''),
+  sortBy: z.enum(['workDate', 'agentName', 'visitCount', 'duration', 'status']).default('workDate'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'), ...paging,
 }) });
 export const adminIdSchema = envelope({ params: z.object({ id }) });
 export const reviewSchema = envelope({ params: z.object({ id }), body: z.object({
@@ -20,4 +22,8 @@ export const agentListSchema = envelope({ query: z.object({ search: z.string().t
 export const agentStatusSchema = envelope({ params: z.object({ id }), body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE']) }).strict() });
 export const companyAdminListSchema = envelope({ query: z.object({ search: z.string().trim().max(100).default(''), reviewStatus: z.enum(['APPROVED', 'PENDING']).optional(), status: z.enum(['ACTIVE', 'INACTIVE']).optional(), ...paging }) });
 export const companyAdminUpdateSchema = envelope({ params: z.object({ id }), body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE']).optional(), reviewStatus: z.enum(['APPROVED', 'PENDING']).optional() }).refine((value) => value.status || value.reviewStatus, 'Provide a status to update') });
-export const auditListSchema = envelope({ query: z.object({ action: z.string().trim().max(100).default(''), entityType: z.string().trim().max(80).default(''), ...paging }) });
+export const auditListSchema = envelope({ query: z.object({
+  search: z.string().trim().max(100).default(''), action: z.string().trim().max(100).default(''),
+  entityType: z.string().trim().max(80).default(''), sortBy: z.enum(['createdAt', 'action', 'entityType', 'actorName']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'), ...paging,
+}) });

@@ -57,8 +57,18 @@ export class EmailService {
     });
   }
 
+  sendAdminLoginOtp(user, otp) {
+    return this.sendTracked({
+      recipient: user.email,
+      type: 'ADMIN_LOGIN_OTP',
+      entityId: user.id,
+      template: templates.adminLogin({ name: user.fullName, otp, expiresInMinutes: this.config.EMAIL_OTP_TTL_MINUTES }),
+      developmentLink: `Development Admin login OTP: ${otp}`,
+    });
+  }
+
   sendWelcome(user) {
-    return this.sendTracked({ recipient: user.email, type: 'WELCOME', entityId: user.id, template: templates.welcome({ name: user.fullName }) });
+    return this.sendTracked({ recipient: user.email, type: 'WELCOME', entityId: user.id, template: templates.welcome({ name: user.fullName, role: user.role }) });
   }
 
   sendPasswordReset(user, rawToken) {

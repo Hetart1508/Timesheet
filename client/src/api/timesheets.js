@@ -57,6 +57,10 @@ export const agentApi = {
     const { data } = await api.delete(`/companies/${id}`);
     return data.data.company;
   },
+  async companyVisits(id) {
+    const { data } = await api.get(`/companies/${id}/visits`);
+    return data.data.visits;
+  },
 };
 
 export const statusLabels = {

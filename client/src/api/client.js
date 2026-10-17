@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
 let refreshPromise;
 api.interceptors.response.use(undefined, async (error) => {
   const request = error.config;
-  const excluded = ['/auth/login', '/auth/refresh', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
+  const excluded = ['/auth/login', '/auth/admin-login/', '/auth/refresh', '/auth/register', '/auth/forgot-password', '/auth/reset-password'];
   if (error.response?.status !== 401 || request?._retried || excluded.some((path) => request?.url?.includes(path))) throw error;
   request._retried = true;
   refreshPromise ||= api.post('/auth/refresh').finally(() => { refreshPromise = null; });

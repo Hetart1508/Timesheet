@@ -13,7 +13,7 @@ export function sanitizeForSpreadsheet(value) {
 
 const exportColumns = [
   ['Timesheet ID', 'timesheetId'], ['Work Date', 'workDate'], ['Agent Name', 'agentName'], ['Agent Email', 'agentEmail'],
-  ['Status', 'status'], ['Company', 'companyName'], ['Contact Person', 'contactPerson'], ['Purpose', 'purpose'],
+  ['Status', 'status'], ['Company', 'companyName'], ['Category', 'category'], ['Contact Person', 'contactPerson'], ['Purpose', 'purpose'],
   ['Visit Notes', 'visitNotes'], ['Check-In (IST)', 'checkInTime'], ['Check-Out (IST)', 'checkOutTime'],
   ['Duration (Minutes)', 'durationMinutes'], ['Duration (Hours)', 'durationHours'], ['Review Comments', 'reviewComment'],
 ];
@@ -21,7 +21,7 @@ const exportColumns = [
 const mapExport = (row) => ({
   timesheetId: Number(row.timesheet_id), workDate: dateOnly(row.work_date), agentName: sanitizeForSpreadsheet(row.agent_name),
   agentEmail: sanitizeForSpreadsheet(row.agent_email), status: row.status, companyName: sanitizeForSpreadsheet(row.company_name || ''),
-  contactPerson: sanitizeForSpreadsheet(row.contact_person || ''), purpose: sanitizeForSpreadsheet(row.purpose || ''), visitNotes: sanitizeForSpreadsheet(row.visit_notes || ''),
+  category: row.category || 'Silver', contactPerson: sanitizeForSpreadsheet(row.contact_person || ''), purpose: sanitizeForSpreadsheet(row.purpose || ''), visitNotes: sanitizeForSpreadsheet(row.visit_notes || ''),
   checkInTime: row.check_in_at ? utcToIstTime(row.check_in_at) : '', checkOutTime: row.check_out_at ? utcToIstTime(row.check_out_at) : '',
   durationMinutes: Number(row.duration_minutes || 0), durationHours: Math.round((Number(row.duration_minutes || 0) / 60) * 100) / 100,
   reviewComment: sanitizeForSpreadsheet(row.review_comment || ''),
@@ -52,7 +52,7 @@ export class ReportService {
     const workbook = new ExcelJS.Workbook(); workbook.creator = 'Timesheet Management'; workbook.created = new Date();
     const sheet = workbook.addWorksheet('Timesheet Visits', { views: [{ state: 'frozen', ySplit: 1 }] });
     sheet.columns = exportColumns.map(([header, key]) => ({ header, key, width: Math.min(42, Math.max(14, header.length + 4)) }));
-    sheet.addRows(rows); sheet.autoFilter = { from: 'A1', to: `N${Math.max(1, rows.length + 1)}` };
+    sheet.addRows(rows); sheet.autoFilter = { from: 'A1', to: `O${Math.max(1, rows.length + 1)}` };
     const header = sheet.getRow(1); header.height = 26; header.font = { bold: true, color: { argb: 'FFFFFFFF' } }; header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2875D1' } }; header.alignment = { vertical: 'middle' };
     sheet.getColumn('purpose').width = 32; sheet.getColumn('visitNotes').width = 42; sheet.getColumn('reviewComment').width = 36;
     ['purpose', 'visitNotes', 'reviewComment'].forEach((key) => { sheet.getColumn(key).alignment = { wrapText: true, vertical: 'top' }; });

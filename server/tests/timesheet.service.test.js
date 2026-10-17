@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TimesheetService } from '../src/modules/timesheets/timesheet.service.js';
+import { visitSchema } from '../src/modules/timesheets/timesheet.schemas.js';
 
 function makeRepository(overrides = {}) {
   return {
@@ -25,11 +26,32 @@ function makeRepository(overrides = {}) {
 }
 
 const visit = {
-  companyId: 5, contactPerson: 'Ravi Shah', purpose: 'Product demonstration',
+  companyId: 5, category: 'Gold', contactPerson: 'Ravi Shah', purpose: 'Product demonstration',
   visitNotes: 'Demonstrated the new workflow.', checkInTime: '10:00', checkOutTime: '11:00',
 };
 
 describe('Agent timesheet business rules', () => {
+  it('accepts only Gold, Silver, or Bronze visit categories', () => {
+    for (const category of ['Gold', 'Silver', 'Bronze']) {
+      expect(visitSchema.shape.body.safeParse({ ...visit, category }).success).toBe(true);
+    }
+    expect(visitSchema.shape.body.safeParse({ ...visit, category: 'Platinum' }).success).toBe(false);
+    expect(visitSchema.shape.body.safeParse({ ...visit, category: undefined }).success).toBe(false);
+  });
+
+  it('includes visit category in timesheet detail responses', () => {
+    const repository = makeRepository();
+    const service = new TimesheetService(repository, {});
+    const result = service.mapDetail({
+      id: 7, work_date: '2026-10-17', status: 'DRAFT', daily_summary: '', visits: [{
+        id: 11, company_id: 5, company_name_snapshot: 'Acme', category: 'Gold', contact_person: 'Ravi Shah',
+        purpose: 'Product demonstration', visit_notes: 'Demonstrated the new workflow.',
+        check_in_at: '2026-10-17 04:30:00', check_out_at: '2026-10-17 05:30:00', duration_minutes: 60,
+      }], reviews: [],
+    });
+    expect(result.visits[0].category).toBe('Gold');
+  });
+
   it('rejects a visit whose check-out is not later than check-in', async () => {
     const repository = makeRepository();
     const service = new TimesheetService(repository, { sendTimesheetSubmitted: vi.fn() });

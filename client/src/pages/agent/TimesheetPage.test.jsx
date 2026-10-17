@@ -50,6 +50,11 @@ describe('Timesheet company search', () => {
     render(<MemoryRouter initialEntries={['/timesheets/5']}><Routes><Route path="/timesheets/:id" element={<TimesheetPage />} /></Routes></MemoryRouter>);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Add visit' }));
+    const category = screen.getByRole('combobox', { name: 'Category' });
+    expect(category).toHaveValue('');
+    expect(screen.getByRole('option', { name: 'Gold' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Silver' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Bronze' })).toBeInTheDocument();
     const companySelect = await screen.findByRole('combobox', { name: 'Company' });
     await screen.findByRole('option', { name: 'Existing Company' });
     fireEvent.change(companySelect, { target: { value: '1' } });

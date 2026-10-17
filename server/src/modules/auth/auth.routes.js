@@ -9,7 +9,7 @@ import { validate } from '../../middleware/validate.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 import {
-  changePasswordSchema, emailSchema, loginSchema, registrationSchema,
+  adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema, loginSchema, registrationSchema,
   resetPasswordSchema, verifyOtpSchema,
 } from './auth.schemas.js';
 
@@ -41,6 +41,11 @@ export function createAuthRouter(options = {}) {
     res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Registration successful. Check your email to verify the account.' : 'Registration successful, but the verification email could not be delivered. Use resend verification.' });
   }));
 
+  router.post('/register-admin', publicLimiter, validate(adminRegistrationSchema), asyncHandler(async (req, res) => {
+    const result = await service.registerAdmin(req.validated.body, { ip: req.ip });
+    res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Admin account created. Check the Admin email for the verification code.' : 'Admin account created, but the verification email could not be delivered. Use resend verification.' });
+  }));
+
   router.post('/verify-email', publicLimiter, validate(verifyOtpSchema), asyncHandler(async (req, res) => {
     const result = await service.verifyEmail(req.validated.body.email, req.validated.body.otp);
     res.json({ success: true, data: result, message: 'Email verified successfully' });
@@ -55,6 +60,17 @@ export function createAuthRouter(options = {}) {
     const result = await service.login(req.validated.body, { ip: req.ip, userAgent: req.get('user-agent') });
     setSessionCookies(res, result);
     res.json({ success: true, data: { user: result.user, csrfToken: result.csrfToken }, message: 'Signed in successfully' });
+  }));
+
+  router.post('/admin-login/request', loginLimiter, validate(adminLoginRequestSchema), asyncHandler(async (req, res) => {
+    const result = await service.requestAdminLogin(req.validated.body);
+    res.json({ success: true, data: result, message: 'A security code was sent to the Admin email.' });
+  }));
+
+  router.post('/admin-login/verify', loginLimiter, validate(adminLoginVerifySchema), asyncHandler(async (req, res) => {
+    const result = await service.verifyAdminLogin(req.validated.body, { ip: req.ip, userAgent: req.get('user-agent') });
+    setSessionCookies(res, result);
+    res.json({ success: true, data: { user: result.user, csrfToken: result.csrfToken }, message: 'Admin signed in successfully' });
   }));
 
   router.post('/refresh', requireCsrf, asyncHandler(async (req, res) => {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthService } from '../src/modules/auth/auth.service.js';
 import { hashToken } from '../src/utils/crypto.js';
-import { FakeEmailService, FakeRepository, passwordEngine, verifiedAgent } from './helpers/fake-auth.js';
+import { FakeEmailService, FakeRepository, passwordEngine, verifiedAdmin, verifiedAgent } from './helpers/fake-auth.js';
 
 let repository;
 let email;
@@ -34,6 +34,25 @@ describe('registration and verification', () => {
     await expect(service.register({ ...registration, email: 'different@example.com' })).rejects.toMatchObject({ code: 'ACCOUNT_DETAILS_IN_USE' });
   });
 
+  it('creates only one unverified Admin and requires email verification', async () => {
+    const adminRegistration = { ...registration, username: 'admin', email: 'admin@example.com' };
+    const result = await service.registerAdmin(adminRegistration, { ip: '127.0.0.1' });
+    expect(result.delivery).toBe('SENT');
+    expect(repository.users[0]).toMatchObject({ role: 'ADMIN', is_email_verified: false });
+    expect(email.sent[0].type).toBe('verification');
+    await expect(service.requestAdminLogin({ email: 'admin@example.com', password: adminRegistration.password }))
+      .rejects.toMatchObject({ code: 'EMAIL_NOT_VERIFIED' });
+    const verification = await service.verifyEmail('admin@example.com', email.sent[0].token);
+    expect(verification).toMatchObject({ verified: true, role: 'ADMIN' });
+  });
+
+  it('refuses to register a second Admin account', async () => {
+    await service.registerAdmin({ ...registration, username: 'admin', email: 'admin@example.com' });
+    await expect(service.registerAdmin({ ...registration, username: 'admin2', email: 'admin2@example.com' }))
+      .rejects.toMatchObject({ code: 'ADMIN_ALREADY_EXISTS' });
+    expect(repository.users.filter((user) => user.role === 'ADMIN')).toHaveLength(1);
+  });
+
   it('rejects expired verification tokens', async () => {
     await service.register(registration);
     const raw = email.sent[0].token;
@@ -53,30 +72,68 @@ describe('registration and verification', () => {
 });
 
 describe('login and sessions', () => {
-  it('logs in using either username or email', async () => {
+  it('logs an Agent in using a verified email and password', async () => {
     verifiedAgent(repository);
-    const byUsername = await service.login({ identifier: 'ASHA', password: 'correct horse battery' });
-    const byEmail = await service.login({ identifier: 'ASHA@EXAMPLE.COM', password: 'correct horse battery' });
-    expect(byUsername.user.username).toBe('asha');
+    const byEmail = await service.login({ email: 'ASHA@EXAMPLE.COM', password: 'correct horse battery' });
     expect(byEmail.user.email).toBe('asha@example.com');
   });
 
   it('uses a generic failure for missing users and invalid passwords', async () => {
     verifiedAgent(repository);
-    await expect(service.login({ identifier: 'asha', password: 'wrong' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
-    await expect(service.login({ identifier: 'missing', password: 'wrong' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+    await expect(service.login({ email: 'asha@example.com', password: 'wrong' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+    await expect(service.login({ email: 'missing@example.com', password: 'wrong' })).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
   });
 
   it('blocks unverified and inactive users', async () => {
     const user = verifiedAgent(repository, { is_email_verified: false });
-    await expect(service.login({ identifier: 'asha', password: 'correct horse battery' })).rejects.toMatchObject({ code: 'EMAIL_NOT_VERIFIED' });
+    await expect(service.login({ email: 'asha@example.com', password: 'correct horse battery' })).rejects.toMatchObject({ code: 'EMAIL_NOT_VERIFIED' });
     user.is_email_verified = true; user.status = 'INACTIVE';
-    await expect(service.login({ identifier: 'asha', password: 'correct horse battery' })).rejects.toMatchObject({ code: 'ACCOUNT_INACTIVE' });
+    await expect(service.login({ email: 'asha@example.com', password: 'correct horse battery' })).rejects.toMatchObject({ code: 'ACCOUNT_INACTIVE' });
+  });
+
+  it('does not allow an Admin account through Agent login', async () => {
+    verifiedAdmin(repository);
+    await expect(service.login({ email: 'admin@example.com', password: 'correct horse battery' }))
+      .rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+    expect(repository.sessions.size).toBe(0);
+  });
+
+  it('requires a valid one-time email code before creating an Admin session', async () => {
+    verifiedAdmin(repository);
+    const challenge = await service.requestAdminLogin({ email: 'ADMIN@example.com', password: 'correct horse battery' });
+    expect(repository.sessions.size).toBe(0);
+    expect(email.sent.at(-1).type).toBe('admin-login');
+    const result = await service.verifyAdminLogin({
+      challengeId: challenge.challengeId, email: 'admin@example.com', otp: email.sent.at(-1).token,
+    });
+    expect(result.user).toMatchObject({ role: 'ADMIN', email: 'admin@example.com' });
+    expect(repository.sessions.size).toBe(1);
+    await expect(service.verifyAdminLogin({
+      challengeId: challenge.challengeId, email: 'admin@example.com', otp: email.sent.at(-1).token,
+    })).rejects.toMatchObject({ code: 'ADMIN_OTP_INVALID' });
+  });
+
+  it('does not allow an Agent account to start Admin login', async () => {
+    verifiedAgent(repository);
+    await expect(service.requestAdminLogin({ email: 'asha@example.com', password: 'correct horse battery' }))
+      .rejects.toMatchObject({ code: 'INVALID_ADMIN_CREDENTIALS' });
+    expect(email.sent).toHaveLength(0);
+  });
+
+  it('rejects incorrect and expired Admin login codes', async () => {
+    verifiedAdmin(repository);
+    const first = await service.requestAdminLogin({ email: 'admin@example.com', password: 'correct horse battery' });
+    await expect(service.verifyAdminLogin({ challengeId: first.challengeId, email: 'admin@example.com', otp: '000000' }))
+      .rejects.toMatchObject({ code: 'ADMIN_OTP_INVALID' });
+    const second = await service.requestAdminLogin({ email: 'admin@example.com', password: 'correct horse battery' });
+    repository.adminLoginChallenges.get(second.challengeId).expiresAt = new Date(0);
+    await expect(service.verifyAdminLogin({ challengeId: second.challengeId, email: 'admin@example.com', otp: email.sent.at(-1).token }))
+      .rejects.toMatchObject({ code: 'ADMIN_OTP_INVALID' });
   });
 
   it('rotates refresh tokens and revokes sessions when an old token is reused', async () => {
     verifiedAgent(repository);
-    const login = await service.login({ identifier: 'asha', password: 'correct horse battery' });
+    const login = await service.login({ email: 'asha@example.com', password: 'correct horse battery' });
     await service.refresh(login.refreshToken);
     await expect(service.refresh(login.refreshToken)).rejects.toMatchObject({ code: 'SESSION_REUSE_DETECTED' });
     expect([...repository.sessions.values()][0].revoked_at).toBeTruthy();
@@ -84,7 +141,7 @@ describe('login and sessions', () => {
 
   it('revokes the matching session on logout', async () => {
     verifiedAgent(repository);
-    const login = await service.login({ identifier: 'asha', password: 'correct horse battery' });
+    const login = await service.login({ email: 'asha@example.com', password: 'correct horse battery' });
     await service.logout(login.refreshToken);
     expect([...repository.sessions.values()][0].revoked_at).toBeTruthy();
   });
@@ -100,7 +157,7 @@ describe('password recovery', () => {
 
   it('resets once, revokes sessions, and rejects token reuse', async () => {
     verifiedAgent(repository);
-    const login = await service.login({ identifier: 'asha', password: 'correct horse battery' });
+    const login = await service.login({ email: 'asha@example.com', password: 'correct horse battery' });
     await service.forgotPassword('asha@example.com');
     const raw = email.sent.at(-1).token;
     await service.resetPassword(raw, 'a much newer passphrase');

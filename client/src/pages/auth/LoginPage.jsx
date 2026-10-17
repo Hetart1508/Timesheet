@@ -10,7 +10,7 @@ export default function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ identifier: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   if (user) return <Navigate to="/dashboard" replace />;
@@ -20,12 +20,12 @@ export default function LoginPage() {
     catch (requestError) { setError(errorMessage(requestError)); }
     finally { setSubmitting(false); }
   };
-  return <AuthShell eyebrow="Welcome back" title="Sign in to your workspace" description="Use your username or verified email address." footer={<>New Agent? <Link to="/register">Create an account</Link></>}>
+  return <AuthShell eyebrow="Agent portal" title="Agent sign in" description="Use your verified Agent email and password." footer={<><span>New Agent? <Link to="/register">Create an account</Link></span><span className="auth-footer-separator">Administrator? <Link to="/admin/login">Use secure Admin sign in</Link></span></>}>
     <form className="auth-form" onSubmit={submit}><Alert>{error}</Alert>
-      <FormField label="Username or email" name="identifier" autoComplete="username" required value={form.identifier} onChange={(e) => setForm({ ...form, identifier: e.target.value })} />
+      <FormField label="Agent email" name="email" type="email" autoComplete="username" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
       <FormField label="Password" name="password" type="password" autoComplete="current-password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
       <div className="form-meta"><Link to="/forgot-password">Forgot password?</Link><Link to="/verify-email">Verify email</Link><Link to="/resend-verification">Resend code</Link></div>
-      <button className="primary-button" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button>
+      <button className="primary-button" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in as Agent'}</button>
     </form>
   </AuthShell>;
 }

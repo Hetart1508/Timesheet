@@ -10,7 +10,7 @@ export default function AdminCompaniesPage() {
   const emptyCompany = { companyName: '', address: '', contactPerson: '', contactPhone: '', notes: '' };
   const [filters, setFilters] = useState({ search: '', reviewStatus: '', status: '' }); const [applied, setApplied] = useState(filters); const [result, setResult] = useState(null); const [error, setError] = useState(''); const [loadError, setLoadError] = useState(''); const [success, setSuccess] = useState('');
   const [formOpen, setFormOpen] = useState(false); const [editing, setEditing] = useState(null); const [form, setForm] = useState(emptyCompany); const [busy, setBusy] = useState(false);
-  const load = () => { setResult(null); setLoadError(''); return adminApi.listCompanies({ ...applied, pageSize: 100 }).then(setResult).catch((err) => setLoadError(errorMessage(err))); };
+  const load = () => { setResult(null); setLoadError(''); const params = Object.fromEntries(Object.entries({ ...applied, pageSize: 100 }).filter(([, value]) => value !== '')); return adminApi.listCompanies(params).then(setResult).catch((err) => setLoadError(errorMessage(err))); };
   useEffect(() => { load(); }, [applied]);
   const beginCreate = () => { setEditing(null); setForm(emptyCompany); setFormOpen(true); setError(''); setSuccess(''); };
   const beginEdit = (company) => { setEditing(company.id); setForm({ companyName: company.companyName, address: company.address, contactPerson: company.contactPerson, contactPhone: company.contactPhone, notes: company.notes }); setFormOpen(true); setError(''); setSuccess(''); window.scrollTo?.({ top: 0, behavior: 'smooth' }); };

@@ -17,6 +17,19 @@ function repository(overrides = {}) {
 }
 
 describe('Admin review workflow', () => {
+  it('includes visit category in the Admin timesheet detail', async () => {
+    const row = {
+      ...submitted,
+      visits: [{ id: 19, company_id: 5, company_name_snapshot: 'Acme', category: 'Bronze', contact_person: 'Ravi Shah',
+        purpose: 'Product demonstration', visit_notes: 'Demonstrated the new workflow.', check_in_at: '2026-10-17 04:30:00',
+        check_out_at: '2026-10-17 05:30:00', duration_minutes: 60 }],
+      reviews: [],
+    };
+    const service = new AdminService(repository({ timesheetDetail: vi.fn(async () => row) }));
+    const result = await service.timesheet(12);
+    expect(result.visits[0].category).toBe('Bronze');
+  });
+
   it('records a review and its audit event in one transaction', async () => {
     const repo = repository(); const service = new AdminService(repo);
     const result = await service.review(12, { id: 1 }, { decision: 'APPROVED', comment: 'Verified.' }, { ip: '127.0.0.1' });

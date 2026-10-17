@@ -7,6 +7,7 @@ export class FakeRepository {
   constructor() {
     this.users = [];
     this.verificationTokens = new Map();
+    this.adminLoginChallenges = new Map();
     this.resetTokens = new Map();
     this.sessions = new Map();
     this.notifications = [];
@@ -50,7 +51,27 @@ export class FakeRepository {
     if (entry[0] !== tokenHash) { token.attempts += 1; if (token.attempts >= maxAttempts) token.consumed = true; return { invalid: true }; }
     token.consumed = true;
     user.is_email_verified = true;
-    return { user_id: user.id, email: user.email, full_name: user.full_name };
+    return { user_id: user.id, email: user.email, full_name: user.full_name, role: user.role };
+  }
+
+  replaceAdminLoginChallenge(id, userId, tokenHash, expiresAt) {
+    for (const [key, challenge] of this.adminLoginChallenges) {
+      if (challenge.userId === userId && !challenge.consumed) this.adminLoginChallenges.delete(key);
+    }
+    this.adminLoginChallenges.set(id, { id, userId, tokenHash, expiresAt, consumed: false, attempts: 0 });
+  }
+  consumeAdminLoginOtp(challengeId, email, tokenHash, maxAttempts) {
+    const challenge = this.adminLoginChallenges.get(challengeId);
+    const user = challenge ? this.findUserById(challenge.userId) : null;
+    if (!challenge || user?.email_normalized !== email || challenge.consumed || challenge.expiresAt <= new Date()
+      || challenge.attempts >= maxAttempts || user?.role !== 'ADMIN' || !user?.is_email_verified || user?.status !== 'ACTIVE') return { invalid: true };
+    if (challenge.tokenHash !== tokenHash) {
+      challenge.attempts += 1;
+      if (challenge.attempts >= maxAttempts) challenge.consumed = true;
+      return { invalid: true };
+    }
+    challenge.consumed = true;
+    return { ...user, user_id: user.id };
   }
 
   replaceResetToken(userId, tokenHash, expiresAt) { this.resetTokens.set(tokenHash, { userId, expiresAt, consumed: false }); }
@@ -87,9 +108,20 @@ export class FakeRepository {
 export class FakeEmailService {
   constructor() { this.sent = []; }
   sendVerification(user, token) { this.sent.push({ type: 'verification', user, token }); return { delivered: true }; }
+  sendAdminLoginOtp(user, token) { this.sent.push({ type: 'admin-login', user, token }); return { delivered: true }; }
   sendWelcome(user) { this.sent.push({ type: 'welcome', user }); return { delivered: true }; }
   sendPasswordReset(user, token) { this.sent.push({ type: 'reset', user, token }); return { delivered: true }; }
   sendPasswordChanged(user) { this.sent.push({ type: 'changed', user }); return { delivered: true }; }
+}
+
+export function verifiedAdmin(repository, overrides = {}) {
+  const id = repository.createUser({
+    fullName: 'Admin User', username: 'admin', usernameNormalized: 'admin',
+    email: 'admin@example.com', emailNormalized: 'admin@example.com',
+    passwordHash: 'hash:correct horse battery', role: 'ADMIN', emailVerified: true,
+  });
+  Object.assign(repository.findUserById(id), overrides);
+  return repository.findUserById(id);
 }
 
 export function verifiedAgent(repository, overrides = {}) {

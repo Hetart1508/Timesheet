@@ -12,8 +12,10 @@ describe('secure spreadsheet exports', () => {
 
   it('produces RFC-style quoted CSV with a UTF-8 BOM', () => {
     const service = new ReportService({});
-    const csv = service.toCsv([{ timesheetId: 1, workDate: '2026-10-17', agentName: 'A "quoted" Agent', agentEmail: '', status: 'APPROVED', companyName: "'=1+1", contactPerson: '', purpose: 'Review, demo', visitNotes: '', checkInTime: '10:00', checkOutTime: '11:00', durationMinutes: 60, durationHours: 1, reviewComment: '' }]);
+    const csv = service.toCsv([{ timesheetId: 1, workDate: '2026-10-17', agentName: 'A "quoted" Agent', agentEmail: '', status: 'APPROVED', companyName: "'=1+1", category: 'Gold', contactPerson: '', purpose: 'Review, demo', visitNotes: '', checkInTime: '10:00', checkOutTime: '11:00', durationMinutes: 60, durationHours: 1, reviewComment: '' }]);
     expect(csv.startsWith('\uFEFF')).toBe(true);
+    expect(csv).toContain('"Category"');
+    expect(csv).toContain('"Gold"');
     expect(csv).toContain('"A ""quoted"" Agent"');
     expect(csv).toContain('"Review, demo"');
     expect(csv).toContain('"\'=1+1"');

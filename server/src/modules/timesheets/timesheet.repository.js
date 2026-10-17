@@ -23,7 +23,7 @@ export class TimesheetRepository {
     const timesheet = await this.findOwned(id, agentId, connection);
     if (!timesheet) return null;
     const [visits] = await connection.execute(
-      `SELECT v.id, v.company_id, v.company_name_snapshot, v.contact_person, v.purpose, v.visit_notes,
+      `SELECT v.id, v.company_id, v.company_name_snapshot, v.category, v.contact_person, v.purpose, v.visit_notes,
               v.check_in_at, v.check_out_at, TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at) AS duration_minutes
        FROM visits v WHERE v.timesheet_id = ? AND v.deleted_at IS NULL ORDER BY v.check_in_at, v.id`, [id],
     );
@@ -89,9 +89,9 @@ export class TimesheetRepository {
   async createVisit(data, connection) {
     const [result] = await connection.execute(
       `INSERT INTO visits
-       (timesheet_id, company_id, company_name_snapshot, contact_person, purpose, visit_notes, check_in_at, check_out_at, created_by, updated_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [data.timesheetId, data.companyId, data.companyName, data.contactPerson, data.purpose, data.visitNotes, data.checkInAt, data.checkOutAt, data.userId, data.userId],
+      (timesheet_id, company_id, company_name_snapshot, category, contact_person, purpose, visit_notes, check_in_at, check_out_at, created_by, updated_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [data.timesheetId, data.companyId, data.companyName, data.category, data.contactPerson, data.purpose, data.visitNotes, data.checkInAt, data.checkOutAt, data.userId, data.userId],
     );
     return result.insertId;
   }
@@ -107,9 +107,9 @@ export class TimesheetRepository {
 
   async updateVisit(id, data, connection) {
     await connection.execute(
-      `UPDATE visits SET company_id = ?, company_name_snapshot = ?, contact_person = ?, purpose = ?,
+      `UPDATE visits SET company_id = ?, company_name_snapshot = ?, category = ?, contact_person = ?, purpose = ?,
        visit_notes = ?, check_in_at = ?, check_out_at = ?, updated_by = ? WHERE id = ?`,
-      [data.companyId, data.companyName, data.contactPerson, data.purpose, data.visitNotes, data.checkInAt, data.checkOutAt, data.userId, id],
+      [data.companyId, data.companyName, data.category, data.contactPerson, data.purpose, data.visitNotes, data.checkInAt, data.checkOutAt, data.userId, id],
     );
   }
 

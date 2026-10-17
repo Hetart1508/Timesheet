@@ -27,6 +27,15 @@ export function AuthProvider({ children }) {
       setUser(data.data.user);
       return data.data.user;
     },
+    async requestAdminLogin(credentials) {
+      const { data } = await api.post('/auth/admin-login/request', credentials);
+      return data.data;
+    },
+    async verifyAdminLogin(challenge) {
+      const { data } = await api.post('/auth/admin-login/verify', challenge);
+      setUser(data.data.user);
+      return data.data.user;
+    },
     async logout() {
       try { await api.post('/auth/logout'); } finally { setUser(null); }
     },

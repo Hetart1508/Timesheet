@@ -51,13 +51,46 @@ export class AuthService {
     return { delivery: delivery.delivered ? 'SENT' : 'FAILED' };
   }
 
+  async registerAdmin(input, request = {}) {
+    this.validatePassword(input.password);
+    const values = {
+      fullName: normalizeName(input.fullName), username: input.username.normalize('NFKC').trim(),
+      usernameNormalized: normalizeUsername(input.username), email: normalizeEmail(input.email),
+      emailNormalized: normalizeEmail(input.email),
+      passwordHash: await this.passwordEngine.hash(input.password, { type: argon2.argon2id }),
+      role: 'ADMIN', emailVerified: false,
+    };
+    const otp = randomOtp();
+    let userId;
+    try {
+      userId = await this.repository.transaction(async (connection) => {
+        if (await this.repository.countAdmins(connection)) {
+          throw new AppError(409, 'ADMIN_ALREADY_EXISTS', 'The Admin account has already been created');
+        }
+        const id = await this.repository.createUser(values, connection);
+        await this.repository.replaceVerificationToken(id, hashToken(otp), expiresIn(env.EMAIL_OTP_TTL_MINUTES * 60_000), connection);
+        await this.repository.audit({ actorUserId: id, action: 'ADMIN_REGISTERED', entityType: 'USER', entityId: id, after: { role: 'ADMIN', emailVerified: false }, ipAddress: request.ip }, connection);
+        return id;
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      if (error?.code === 'ER_DUP_ENTRY') {
+        if (await this.repository.countAdmins()) throw new AppError(409, 'ADMIN_ALREADY_EXISTS', 'The Admin account has already been created');
+        throw new AppError(409, 'ACCOUNT_DETAILS_IN_USE', 'An account already uses those details');
+      }
+      throw error;
+    }
+    const delivery = await this.emailService.sendVerification({ id: userId, email: values.email, fullName: values.fullName }, otp);
+    return { delivery: delivery.delivered ? 'SENT' : 'FAILED' };
+  }
+
   async verifyEmail(email, otp) {
     const verified = await this.repository.transaction((connection) => this.repository.consumeVerificationOtp(
       normalizeEmail(email), hashToken(otp), env.EMAIL_OTP_MAX_ATTEMPTS, connection,
     ));
     if (!verified || verified.invalid) throw new AppError(400, 'VERIFICATION_OTP_INVALID', 'The verification code is invalid or expired');
-    await this.emailService.sendWelcome({ id: verified.user_id, email: verified.email, fullName: verified.full_name });
-    return { verified: true };
+    await this.emailService.sendWelcome({ id: verified.user_id, email: verified.email, fullName: verified.full_name, role: verified.role });
+    return { verified: true, role: verified.role };
   }
 
   async resendVerification(email) {
@@ -71,10 +104,9 @@ export class AuthService {
   }
 
   async login(input, request = {}) {
-    const identifier = input.identifier.includes('@') ? normalizeEmail(input.identifier) : normalizeUsername(input.identifier);
-    const user = await this.repository.findIdentity(identifier);
+    const user = await this.repository.findUserByEmail(normalizeEmail(input.email));
     const valid = user && await this.passwordEngine.verify(user.password_hash, input.password);
-    if (!valid) throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid username/email or password');
+    if (!valid || user.role !== 'AGENT') throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid Agent email or password');
     if (!user.is_email_verified) throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Verify your email before signing in');
     if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_INACTIVE', 'This account is inactive');
 
@@ -89,6 +121,56 @@ export class AuthService {
     return {
       user: publicUser(user), accessToken: await signAccessToken(user, sessionId),
       refreshToken, csrfToken: randomToken(),
+    };
+  }
+
+  async requestAdminLogin(input) {
+    const email = normalizeEmail(input.email);
+    const user = await this.repository.findUserByEmail(email);
+    const valid = user && await this.passwordEngine.verify(user.password_hash, input.password);
+    if (!valid || user.role !== 'ADMIN') {
+      throw new AppError(401, 'INVALID_ADMIN_CREDENTIALS', 'Invalid Admin email or password');
+    }
+    if (!user.is_email_verified) throw new AppError(403, 'EMAIL_NOT_VERIFIED', 'Verify the Admin email before signing in');
+    if (user.status !== 'ACTIVE') throw new AppError(403, 'ACCOUNT_INACTIVE', 'This Admin account is inactive');
+
+    const challengeId = crypto.randomUUID();
+    const otp = randomOtp();
+    await this.repository.transaction((connection) => this.repository.replaceAdminLoginChallenge(
+      challengeId, user.id, hashToken(otp), expiresIn(env.EMAIL_OTP_TTL_MINUTES * 60_000), connection,
+    ));
+    const delivery = await this.emailService.sendAdminLoginOtp(
+      { id: user.id, email: user.email, fullName: user.full_name }, otp,
+    );
+    if (!delivery.delivered) throw new AppError(503, 'ADMIN_OTP_DELIVERY_FAILED', 'The security code could not be delivered. Please try again.');
+    return { challengeId, expiresInMinutes: env.EMAIL_OTP_TTL_MINUTES };
+  }
+
+  async verifyAdminLogin(input, request = {}) {
+    const sessionId = crypto.randomUUID();
+    const refreshToken = randomToken(48);
+    const result = await this.repository.transaction(async (connection) => {
+      const admin = await this.repository.consumeAdminLoginOtp(
+        input.challengeId, normalizeEmail(input.email), hashToken(input.otp), env.EMAIL_OTP_MAX_ATTEMPTS, connection,
+      );
+      if (!admin || admin.invalid) throw new AppError(400, 'ADMIN_OTP_INVALID', 'The security code is invalid or expired');
+      await this.repository.createSession({
+        id: sessionId, userId: admin.user_id, refreshTokenHash: hashToken(refreshToken),
+        expiresAt: expiresIn(env.REFRESH_TOKEN_TTL_DAYS * 86_400_000),
+        ipAddress: request.ip, userAgent: request.userAgent?.slice(0, 255),
+      }, connection);
+      await this.repository.touchLogin(admin.user_id, connection);
+      await this.repository.audit({
+        actorUserId: admin.user_id, action: 'ADMIN_LOGIN_VERIFIED', entityType: 'USER',
+        entityId: admin.user_id, ipAddress: request.ip,
+      }, connection);
+      return admin;
+    });
+    return {
+      user: publicUser({ ...result, id: result.user_id }),
+      accessToken: await signAccessToken({ ...result, id: result.user_id }, sessionId),
+      refreshToken,
+      csrfToken: randomToken(),
     };
   }
 

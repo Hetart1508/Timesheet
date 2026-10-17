@@ -32,6 +32,7 @@ describe('Admin company management', () => {
   it('creates an approved directory entry', async () => {
     render(<MemoryRouter><AdminCompaniesPage /></MemoryRouter>);
     await screen.findByText('Northwind Labs');
+    expect(adminApi.listCompanies).toHaveBeenCalledWith({ pageSize: 100 });
     fireEvent.click(screen.getByRole('button', { name: 'Add company' }));
     fireEvent.change(screen.getByLabelText('Company name'), { target: { value: 'Contoso Field' } });
     fireEvent.change(screen.getByLabelText('Address'), { target: { value: '2 Main Street' } });

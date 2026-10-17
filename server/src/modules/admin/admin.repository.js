@@ -23,14 +23,19 @@ export class AdminRepository {
     if (filters.agentId) { where.push('t.agent_id = ?'); values.push(filters.agentId); }
     if (filters.startDate) { where.push('t.work_date >= ?'); values.push(filters.startDate); }
     if (filters.endDate) { where.push('t.work_date <= ?'); values.push(filters.endDate); }
+    if (filters.search) { where.push('(u.full_name LIKE ? OR u.email LIKE ? OR r.full_name LIKE ?)'); const search = `%${filters.search}%`; values.push(search, search, search); }
     const offset = (filters.page - 1) * filters.pageSize;
+    const sortColumns = { workDate: 't.work_date', agentName: 'u.full_name', visitCount: 'visit_count', duration: 'duration_minutes', status: 't.status' };
+    const sortColumn = sortColumns[filters.sortBy] || sortColumns.workDate;
+    const sortOrder = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
     const [rows] = await connection.execute(`SELECT t.id, t.work_date, t.status, t.submitted_at, t.reviewed_at, t.review_comment,
       u.full_name agent_name, u.email agent_email, r.full_name reviewer_name, COUNT(v.id) visit_count,
       COALESCE(SUM(TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at)), 0) duration_minutes
       FROM timesheets t JOIN users u ON u.id = t.agent_id LEFT JOIN users r ON r.id = t.reviewed_by
       LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL WHERE ${where.join(' AND ')}
-      GROUP BY t.id ORDER BY t.work_date DESC, t.id DESC LIMIT ? OFFSET ?`, [...values, filters.pageSize, offset]);
-    const [counts] = await connection.execute(`SELECT COUNT(*) total FROM timesheets t WHERE ${where.join(' AND ')}`, values);
+      GROUP BY t.id ORDER BY ${sortColumn} ${sortOrder}, t.id DESC LIMIT ? OFFSET ?`, [...values, filters.pageSize, offset]);
+    const [counts] = await connection.execute(`SELECT COUNT(*) total FROM timesheets t JOIN users u ON u.id = t.agent_id
+      LEFT JOIN users r ON r.id = t.reviewed_by WHERE ${where.join(' AND ')}`, values);
     return { rows, total: Number(counts[0].total) };
   }
 
@@ -38,7 +43,7 @@ export class AdminRepository {
     const [rows] = await connection.execute(`SELECT t.*, u.full_name agent_name, u.email agent_email, u.username agent_username
       FROM timesheets t JOIN users u ON u.id = t.agent_id WHERE t.id = ?${lock ? ' FOR UPDATE' : ''}`, [id]);
     if (!rows[0]) return null;
-    const [visits] = await connection.execute(`SELECT id, company_id, company_name_snapshot, contact_person, purpose, visit_notes,
+    const [visits] = await connection.execute(`SELECT id, company_id, company_name_snapshot, category, contact_person, purpose, visit_notes,
       check_in_at, check_out_at, TIMESTAMPDIFF(MINUTE, check_in_at, check_out_at) duration_minutes
       FROM visits WHERE timesheet_id = ? AND deleted_at IS NULL ORDER BY check_in_at`, [id]);
     const [reviews] = await connection.execute(`SELECT tr.id, tr.decision, tr.comment, tr.created_at, u.full_name reviewer_name
@@ -102,10 +107,14 @@ export class AdminRepository {
     const where = ['1=1']; const values = [];
     if (filters.action) { where.push('a.action LIKE ?'); values.push(`%${filters.action}%`); }
     if (filters.entityType) { where.push('a.entity_type = ?'); values.push(filters.entityType); }
+    if (filters.search) { where.push('(a.action LIKE ? OR a.entity_type LIKE ? OR a.entity_id LIKE ? OR u.full_name LIKE ? OR u.email LIKE ?)'); const search = `%${filters.search}%`; values.push(search, search, search, search, search); }
     const offset = (filters.page - 1) * filters.pageSize;
+    const sortColumns = { createdAt: 'a.created_at', action: 'a.action', entityType: 'a.entity_type', actorName: 'u.full_name' };
+    const sortColumn = sortColumns[filters.sortBy] || sortColumns.createdAt;
+    const sortOrder = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
     const [rows] = await connection.execute(`SELECT a.*, u.full_name actor_name FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
-      WHERE ${where.join(' AND ')} ORDER BY a.created_at DESC LIMIT ? OFFSET ?`, [...values, filters.pageSize, offset]);
-    const [counts] = await connection.execute(`SELECT COUNT(*) total FROM audit_logs a WHERE ${where.join(' AND ')}`, values);
+      WHERE ${where.join(' AND ')} ORDER BY ${sortColumn} ${sortOrder}, a.id DESC LIMIT ? OFFSET ?`, [...values, filters.pageSize, offset]);
+    const [counts] = await connection.execute(`SELECT COUNT(*) total FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id WHERE ${where.join(' AND ')}`, values);
     return { rows, total: Number(counts[0].total) };
   }
 }
