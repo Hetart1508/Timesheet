@@ -64,7 +64,7 @@ All routes are under `/api/v1/agent` and require an active Agent session. A dail
 | POST | `/timesheets` | Agent + CSRF | Create or open the daily sheet for optional `workDate`. |
 | GET | `/timesheets/:id` | Owning Agent | Sheet declaration, visits, and review details. |
 | PUT | `/timesheets/:id` | Owning Agent + CSRF | Save `{ "dailySummary": "..." }`. |
-| POST | `/timesheets/:id/visits` | Owning Agent + CSRF | Add a company visit with company, category (`Gold`, `Silver`, or `Bronze`), contact, purpose, notes, `checkInTime`, and `checkOutTime` (`HH:mm`). |
+| POST | `/timesheets/:id/visits` | Owning Agent + CSRF | Add a company visit with company, category (`Gold`, `Silver`, or `Bronze`), contact, purpose, notes, and `checkInTime` / `checkOutTime` in IST (`HH:mm`). |
 | PUT | `/visits/:id` | Owning Agent + CSRF | Edit a visit. |
 | DELETE | `/visits/:id` | Owning Agent + CSRF | Soft-delete a visit. |
 | POST | `/timesheets/:id/submit` | Owning Agent + CSRF | Submit the daily sheet for review. |

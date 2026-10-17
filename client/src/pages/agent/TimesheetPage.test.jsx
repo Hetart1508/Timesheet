@@ -66,7 +66,7 @@ describe('Timesheet company search', () => {
     expect(await screen.findByRole('option', { name: 'Northwind Field' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Existing Company' })).toBeInTheDocument();
     expect(companySelect).toHaveValue('1');
-    fireEvent.change(companySelect, { target: { value: '2' } });
+    fireEvent.keyDown(search, { key: 'Enter', code: 'Enter' });
     expect(companySelect).toHaveValue('2');
     expect(agentApi.addVisit).not.toHaveBeenCalled();
   });

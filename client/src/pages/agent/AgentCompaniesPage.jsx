@@ -5,6 +5,7 @@ import Alert from '../../components/common/Alert.jsx';
 import RequestState from '../../components/common/RequestState.jsx';
 import { agentApi } from '../../api/timesheets.js';
 import { errorMessage } from '../../api/client.js';
+import useDebouncedValue from '../../hooks/useDebouncedValue.js';
 
 const emptyCompany = { companyName: '', address: '', contactPerson: '', contactPhone: '', notes: '' };
 
@@ -18,6 +19,7 @@ export default function AgentCompaniesPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyCompany);
   const [busy, setBusy] = useState(false);
+  const debouncedSearch = useDebouncedValue(search, 500);
 
   const load = useCallback(async () => {
     setResult(null);
@@ -26,6 +28,7 @@ export default function AgentCompaniesPage() {
     catch (requestError) { setLoadError(errorMessage(requestError)); }
   }, [applied]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { setApplied(debouncedSearch); }, [debouncedSearch]);
 
   const beginCreate = () => { setEditing(null); setForm(emptyCompany); setError(''); setSuccess(''); };
   const beginEdit = (company) => {
@@ -74,7 +77,7 @@ export default function AgentCompaniesPage() {
     </section>
     <section className="content-card section-block">
       <div className="section-heading"><div><p className="eyebrow">Owned records</p><h2>Company submissions</h2></div></div>
-      <form className="search-bar" onSubmit={(event) => { event.preventDefault(); setApplied(search); }}><input aria-label="Search your companies" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search company name" /><button className="secondary-button"><Search size={16} /> Search</button></form>
+      <label className="admin-search-field admin-agent-search"><Search size={17} /><input type="search" aria-label="Search your companies" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search company name" /></label>
       {!result ? <RequestState error={loadError} label="Loading your companies…" onRetry={load} /> : result.companies.length ? <div className="company-admin-grid">{result.companies.map((company) => {
         const editable = company.reviewStatus === 'PENDING' && company.status === 'ACTIVE';
         return <article className="company-admin-card" key={company.id}><div><span className={`account-status ${company.reviewStatus.toLowerCase()}`}>{company.reviewStatus}</span><span className={`account-status ${company.status.toLowerCase()}`}>{company.status}</span></div><Building2 /><h3>{company.companyName}</h3><p>{company.address}</p>{company.contactPerson ? <p>Contact: {company.contactPerson}</p> : null}<div className="row-actions">{editable ? <><button className="table-action" onClick={() => beginEdit(company)}><Pencil size={15} /> Edit</button><button className="table-danger" onClick={() => remove(company)}><Trash2 size={15} /> Delete</button></> : <small>{company.status === 'INACTIVE' ? 'Removed from the active directory' : 'Approved entries are managed by an Admin'}</small>}</div></article>;

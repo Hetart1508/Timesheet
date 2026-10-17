@@ -27,6 +27,14 @@ beforeEach(() => {
 });
 
 describe('Agent company management', () => {
+  it('automatically searches owned companies after typing', async () => {
+    render(<MemoryRouter><AgentCompaniesPage /></MemoryRouter>);
+    await screen.findByText('Northwind Labs');
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search your companies' }), { target: { value: 'Northwind' } });
+    await waitFor(() => expect(agentApi.listMyCompanies).toHaveBeenLastCalledWith({ search: 'Northwind', pageSize: 50 }));
+    expect(screen.queryByRole('button', { name: 'Search' })).not.toBeInTheDocument();
+  });
+
   it('creates a company submission', async () => {
     render(<MemoryRouter><AgentCompaniesPage /></MemoryRouter>);
     await screen.findByText('Northwind Labs');

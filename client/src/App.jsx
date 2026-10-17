@@ -48,6 +48,7 @@ export default function App() {
             <Route path="/companies" element={<AgentCompaniesPage />} />
           </Route>
           <Route element={<ProtectedRoute role="ADMIN" />}>
+            <Route path="/admin/reviews" element={<AdminTimesheetsPage defaultStatus="SUBMITTED" />} />
             <Route path="/admin/timesheets" element={<AdminTimesheetsPage />} />
             <Route path="/admin/timesheets/:id" element={<AdminReviewPage />} />
             <Route path="/admin/agents" element={<AdminAgentsPage />} />

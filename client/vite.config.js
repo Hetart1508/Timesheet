@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
             'http-vendor': ['axios'],
             icons: ['lucide-react'],
+            'motion-vendor': ['motion'],
           },
         },
       },

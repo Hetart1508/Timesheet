@@ -1,48 +1,90 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Eye, FileText, Search } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Eye, FileText, Search, SlidersHorizontal } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell.jsx';
 import Alert from '../../components/common/Alert.jsx';
 import RequestState from '../../components/common/RequestState.jsx';
 import StatusBadge from '../../components/common/StatusBadge.jsx';
+import TablePagination from '../../components/common/TablePagination.jsx';
+import useDebouncedValue from '../../hooks/useDebouncedValue.js';
 import { adminApi } from '../../api/admin.js';
 import { errorMessage } from '../../api/client.js';
 import { formatDuration, formatWorkDate, statusLabels } from '../../api/timesheets.js';
 
 const initialFilters = { status: '', startDate: '', endDate: '', agentId: '', search: '', sortBy: 'workDate', sortOrder: 'desc', page: 1, pageSize: 25 };
 
-export default function AdminTimesheetsPage() {
+function SortHeader({ field, label, applied, onSort }) {
+  const active = applied.sortBy === field;
+  const Icon = active ? applied.sortOrder === 'asc' ? ArrowUp : ArrowDown : ArrowDownUp;
+  return <th aria-sort={active ? (applied.sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}><button type="button" className="table-sort" onClick={() => onSort(field)}>{label}<Icon size={14} /></button></th>;
+}
+
+export default function AdminTimesheetsPage({ defaultStatus = '' }) {
   const [searchParams] = useSearchParams();
-  const [filters, setFilters] = useState({ ...initialFilters, status: searchParams.get('status') || '' });
-  const [applied, setApplied] = useState({ ...initialFilters, status: searchParams.get('status') || '' });
+  const reviewQueue = defaultStatus === 'SUBMITTED';
+  const initialStatus = searchParams.get('status') || defaultStatus;
+  const [filters, setFilters] = useState({ ...initialFilters, status: initialStatus });
+  const [applied, setApplied] = useState({ ...initialFilters, status: initialStatus });
   const [result, setResult] = useState(null);
   const [agents, setAgents] = useState([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [agentError, setAgentError] = useState('');
+  const debouncedSearch = useDebouncedValue(filters.search, 500);
   const loadAgents = () => { setAgentError(''); return adminApi.listAgents({ pageSize: 100 }).then((value) => setAgents(value.agents)).catch((err) => setAgentError(errorMessage(err))); };
   const load = () => { setResult(null); setLoadError(''); return adminApi.listTimesheets(Object.fromEntries(Object.entries(applied).filter(([, value]) => value !== ''))).then(setResult).catch((err) => setLoadError(errorMessage(err))); };
   useEffect(() => { loadAgents(); }, []);
   useEffect(() => { load(); }, [applied]);
-  const pageCount = result ? Math.max(1, Math.ceil(result.pagination.total / result.pagination.pageSize)) : 1;
+  useEffect(() => { setApplied((current) => current.search === debouncedSearch ? current : { ...current, search: debouncedSearch, page: 1 }); }, [debouncedSearch]);
+  const activeFilterCount = [applied.agentId, applied.status, applied.startDate, applied.endDate].filter(Boolean).length;
+  const applyFilters = (event) => {
+    event.preventDefault();
+    setApplied((current) => ({ ...current, agentId: filters.agentId, status: filters.status, startDate: filters.startDate, endDate: filters.endDate, page: 1 }));
+  };
+  const clearFilters = () => {
+    const cleared = { agentId: '', status: '', startDate: '', endDate: '' };
+    setFilters((current) => ({ ...current, ...cleared }));
+    setApplied((current) => ({ ...current, ...cleared, page: 1 }));
+  };
+  const changeSort = (sortBy) => {
+    const sortOrder = applied.sortBy === sortBy ? (applied.sortOrder === 'desc' ? 'asc' : 'desc') : 'asc';
+    setApplied((current) => ({ ...current, sortBy, sortOrder, page: 1 }));
+  };
 
   return <AppShell>
-    <section className="workspace-heading"><p className="eyebrow">Administrative review</p><h1>All timesheets</h1><p>Filter submissions across every Agent and inspect their declarations and visit records.</p></section>
-    <section className="content-card section-block">
-      <form className="filter-bar admin-filter timesheet-admin-filter" onSubmit={(event) => { event.preventDefault(); setApplied({ ...filters, page: 1, pageSize: applied.pageSize }); }}>
-        <label><span>Search agent or reviewer</span><input type="search" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder="Name or email" /></label>
+    <section className="workspace-heading"><p className="eyebrow">Administrative review</p><h1>{reviewQueue ? 'Timesheets for review' : 'All timesheets'}</h1><p>{reviewQueue ? 'Review submitted timesheets and inspect each Agent’s declarations and visit records.' : 'Filter submissions across every Agent and inspect their declarations and visit records.'}</p></section>
+    <section className="content-card section-block admin-table-card">
+      <div className="admin-table-toolbar">
+        <div><h2>Timesheets</h2><p>{result ? `${result.pagination.total.toLocaleString()} records` : 'Search and review agent submissions'}</p></div>
+        <div className="admin-search-form" role="search">
+          <label className="admin-search-field"><Search size={17} /><input type="search" aria-label="Search agent or reviewer" placeholder="Search agent or reviewer" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} /></label>
+          <button className={`filter-toggle${filtersOpen ? ' active' : ''}`} type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={16} /> Filters{activeFilterCount ? <span>{activeFilterCount}</span> : null}</button>
+        </div>
+      </div>
+      {filtersOpen ? <form className="admin-filter-panel" onSubmit={applyFilters}>
         <label><span>Agent</span><select value={filters.agentId} onChange={(e) => setFilters({ ...filters, agentId: e.target.value })}><option value="">All agents</option>{agents.map((agent) => <option value={agent.id} key={agent.id}>{agent.fullName}</option>)}</select></label>
         <label><span>Status</span><select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         <label><span>From</span><input type="date" value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} /></label>
         <label><span>To</span><input type="date" value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} /></label>
-        <label><span>Sort by</span><select value={filters.sortBy} onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}><option value="workDate">Work date</option><option value="agentName">Agent name</option><option value="visitCount">Visits</option><option value="duration">Duration</option><option value="status">Status</option></select></label>
-        <label><span>Direction</span><select value={filters.sortOrder} onChange={(e) => setFilters({ ...filters, sortOrder: e.target.value })}><option value="desc">Descending</option><option value="asc">Ascending</option></select></label>
-        <button className="secondary-button" type="submit"><Search size={16} /> Filter</button>
+        <div className="admin-filter-actions"><button className="secondary-button" type="submit">Apply filters</button>{activeFilterCount ? <button className="text-action" type="button" onClick={clearFilters}>Clear filters</button> : null}</div>
       </form>
+      : null}
       <Alert>{agentError ? <>Could not load Agent filters. <button className="text-action" type="button" onClick={loadAgents}>Retry</button></> : null}</Alert>
-      {!result ? <RequestState error={loadError} label="Loading timesheets…" onRetry={load} /> : result.timesheets.length ? <>
-        <div className="table-wrap"><table className="data-table"><thead><tr><th>Agent</th><th>Work date</th><th>Visits</th><th>Duration</th><th>Status</th><th>Reviewer</th><th /></tr></thead><tbody>{result.timesheets.map((sheet) => <tr key={sheet.id}><td><strong>{sheet.agentName}</strong><small>{sheet.agentEmail}</small></td><td>{formatWorkDate(sheet.workDate)}</td><td>{sheet.visitCount}</td><td>{formatDuration(sheet.duration)}</td><td><StatusBadge status={sheet.status} /></td><td>{sheet.reviewerName || '—'}</td><td><Link className="table-action" to={`/admin/timesheets/${sheet.id}`}><Eye size={15} /> Inspect</Link></td></tr>)}</tbody></table></div>
-        <div className="pagination"><span>Page {result.pagination.page} of {pageCount} · {result.pagination.total} records</span><div className="pagination-controls"><label>Rows <select aria-label="Timesheets per page" value={applied.pageSize} onChange={(event) => setApplied({ ...applied, page: 1, pageSize: Number(event.target.value) })}><option value={25}>25</option><option value={50}>50</option><option value={100}>100</option></select></label><button className="icon-button" aria-label="Previous page" disabled={applied.page <= 1} onClick={() => setApplied({ ...applied, page: applied.page - 1 })}><ChevronLeft /></button><button className="icon-button" aria-label="Next page" disabled={applied.page >= pageCount} onClick={() => setApplied({ ...applied, page: applied.page + 1 })}><ChevronRight /></button></div></div>
-      </> : <div className="empty-state"><FileText /><h3>No timesheets match</h3><p>Adjust the filters and try again.</p></div>}
+      {!result ? <RequestState error={loadError} label="Loading timesheets…" onRetry={load} /> : <>
+        {result.timesheets.length ? <div className="table-wrap"><table className="data-table admin-data-table"><thead><tr>
+          <SortHeader field="agentName" label="Agent" applied={applied} onSort={changeSort} />
+          <SortHeader field="workDate" label="Work date" applied={applied} onSort={changeSort} />
+          <SortHeader field="visitCount" label="Visits" applied={applied} onSort={changeSort} />
+          <SortHeader field="duration" label="Duration" applied={applied} onSort={changeSort} />
+          <SortHeader field="status" label="Status" applied={applied} onSort={changeSort} />
+          <th>Reviewer</th><th>Actions</th>
+        </tr></thead><tbody>{result.timesheets.map((sheet) => <tr key={sheet.id}>
+          <td><strong>{sheet.agentName}</strong><small>{sheet.agentEmail}</small></td><td>{formatWorkDate(sheet.workDate)}</td>
+          <td>{sheet.visitCount}</td><td>{formatDuration(sheet.duration)}</td><td><StatusBadge status={sheet.status} /></td>
+          <td>{sheet.reviewerName || '—'}</td><td><Link className="table-action" to={`/admin/timesheets/${sheet.id}`}><Eye size={15} /> Inspect</Link></td>
+        </tr>)}</tbody></table></div> : <div className="empty-state"><FileText /><h3>No timesheets match</h3><p>Adjust your search or filters and try again.</p></div>}
+        <TablePagination page={result.pagination.page} pageSize={result.pagination.pageSize} total={result.pagination.total} label="Timesheets" onPageChange={(page) => setApplied((current) => ({ ...current, page }))} onPageSizeChange={(pageSize) => setApplied((current) => ({ ...current, pageSize, page: 1 }))} />
+      </>}
     </section>
   </AppShell>;
 }

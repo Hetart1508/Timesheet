@@ -61,6 +61,19 @@ export default function TimesheetPage() {
     setCompanySearchActive(false);
     loadCompanies(companySearch.trim(), selectedCompany);
   };
+  const selectCompany = (item) => {
+    setVisit({ ...visit, companyId: String(item.id), contactPerson: visit.contactPerson || item.contactPerson || '' });
+    setCompanySearch(item.companyName);
+    setCompanySearchActive(false);
+    setCompanySuggestions([]);
+  };
+  const handleCompanySearchKeyDown = (event) => {
+    if (event.target.getAttribute('aria-label') !== 'Search companies' || event.key !== 'Enter') return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (companySuggestions.length) selectCompany(companySuggestions[0]);
+    else if (companySearch.trim()) searchCompaniesNow();
+  };
   const updateCompanySearch = (value) => {
     setCompanySearch(value);
     setCompanySearchActive(true);
@@ -118,10 +131,10 @@ export default function TimesheetPage() {
 
     {showVisitForm ? <section className="content-card form-card section-block">
       <div className="section-heading"><div><p className="eyebrow">{editingVisitId ? 'Edit visit' : 'New visit'}</p><h2>Visit details</h2></div><button className="icon-button" aria-label="Close visit form" onClick={resetVisit}><X /></button></div>
-      <form className="business-form" onSubmit={saveVisit}>
+      <form className="business-form" onSubmit={saveVisit} onKeyDownCapture={handleCompanySearchKeyDown}>
         <div className="company-picker"><label className="field"><span>Company</span><div className="search-control"><input aria-label="Search companies" type="search" maxLength="100" placeholder="Search companies" value={companySearch} onChange={(e) => updateCompanySearch(e.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); searchCompaniesNow(); } }} /><button type="button" className="secondary-button" disabled={companiesLoading} onClick={searchCompaniesNow}>{companiesLoading ? 'Searching…' : 'Search'}</button></div>{companySearch.trim() && companySuggestions.length ? <div className="company-suggestions" role="group" aria-label="Company suggestions">{companySuggestions.slice(0, 5).map((item) => <button type="button" className="company-suggestion" aria-pressed={String(visit.companyId) === String(item.id)} key={item.id} onClick={() => { setVisit({ ...visit, companyId: String(item.id), contactPerson: visit.contactPerson || item.contactPerson || '' }); setCompanySearch(item.companyName); setCompanySearchActive(false); setCompanySuggestions([]); }}><strong>{item.companyName}</strong><small>{item.address}</small></button>)}</div> : null}<select aria-label="Company" required disabled={companiesLoading || companies.length === 0} value={visit.companyId} onChange={(e) => { const value = e.target.value; const selected = companies.find((item) => String(item.id) === value); setVisit({ ...visit, companyId: value, contactPerson: visit.contactPerson || selected?.contactPerson || '' }); }}><option value="">Select a company</option>{companies.map((item) => <option value={item.id} key={item.id}>{item.companyName}{item.reviewStatus === 'PENDING' ? ' (pending review)' : ''}</option>)}</select>{companiesLoading ? <small role="status">Searching available companies…</small> : companiesError ? <small className="field-error" role="alert">{companiesError}</small> : companyMatchCount === 0 ? <small role="status">{companySearch ? `No companies match “${companySearch}”.` : 'No active companies found.'} Add a new company if it is missing.</small> : companyMatchCount !== null ? <small role="status">{companyMatchCount} {companyMatchCount === 1 ? 'company' : 'companies'} found.</small> : null}{errors.companyId ? <small className="field-error">{errors.companyId}</small> : null}</label><button type="button" className="text-action" onClick={() => setShowCompanyForm(!showCompanyForm)}><Plus size={16} /> Add a new company</button></div>
         {selectedCompany ? <p className="selection-note"><Building2 size={16} /> {selectedCompany.address}</p> : null}
-        <div className="two-fields"><label className="field"><span>Check-in time</span><input type="time" required value={visit.checkInTime} onChange={(e) => setVisit({ ...visit, checkInTime: e.target.value })} />{errors.checkInTime ? <small className="field-error">{errors.checkInTime}</small> : null}</label><label className="field"><span>Check-out time</span><input type="time" required value={visit.checkOutTime} onChange={(e) => setVisit({ ...visit, checkOutTime: e.target.value })} />{errors.checkOutTime ? <small className="field-error">{errors.checkOutTime}</small> : null}</label></div>
+        <div className="two-fields"><label className="field"><span>Check-in time (IST)</span><input type="time" required value={visit.checkInTime} onChange={(e) => setVisit({ ...visit, checkInTime: e.target.value })} />{errors.checkInTime ? <small className="field-error">{errors.checkInTime}</small> : null}</label><label className="field"><span>Check-out time (IST)</span><input type="time" required value={visit.checkOutTime} onChange={(e) => setVisit({ ...visit, checkOutTime: e.target.value })} />{errors.checkOutTime ? <small className="field-error">{errors.checkOutTime}</small> : null}</label></div>
         <label className="field"><span>Category</span><select required value={visit.category} onChange={(e) => setVisit({ ...visit, category: e.target.value })}><option value="">Select a category</option><option value="Gold">Gold</option><option value="Silver">Silver</option><option value="Bronze">Bronze</option></select>{errors.category ? <small className="field-error">{errors.category}</small> : null}</label>
         <label className="field"><span>Contact person</span><input required minLength="2" maxLength="120" value={visit.contactPerson} onChange={(e) => setVisit({ ...visit, contactPerson: e.target.value })} /></label>
         <label className="field"><span>Purpose</span><textarea required minLength="2" maxLength="500" rows="2" value={visit.purpose} onChange={(e) => setVisit({ ...visit, purpose: e.target.value })} /></label>
