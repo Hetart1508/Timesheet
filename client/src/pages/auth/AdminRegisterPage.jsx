@@ -51,7 +51,7 @@ export default function AdminRegisterPage() {
     finally { setSubmitting(false); }
   };
 
-  return <AuthShell eyebrow="One-time Admin setup" title={step === 'details' ? 'Create the Admin account' : step === 'verify' ? 'Verify the Admin email' : 'Admin account ready'} description={step === 'details' ? 'Only one Admin account can be created for this system.' : step === 'verify' ? `Enter the six-digit code sent to ${form.email}.` : 'Every Admin login will require a new email security code.'} footer={<>Already set up? <Link to="/admin/login">Admin sign in</Link> · <Link to="/login">Agent sign in</Link></>}>
+  return <AuthShell eyebrow="One-time Admin setup" title={step === 'details' ? 'Create the Admin account' : step === 'verify' ? 'Verify the Admin email' : 'Admin account ready'} description={step === 'details' ? 'Only one Admin account can be created for this system.' : step === 'verify' ? `Enter the six-digit code sent to ${form.email}.` : 'Every Admin login will require a new email security code.'} footer={<>Already set up? <Link to="/login/admin">Admin sign in</Link> · <Link to="/login/agent">Agent sign in</Link></>}>
     <Alert>{error}</Alert>
     {step === 'details' ? <form className="auth-form" onSubmit={register}>
       <div className="two-fields"><FormField label="Full name" name="fullName" autoComplete="name" required minLength="2" maxLength="120" error={fieldErrors.fullName} value={form.fullName} onChange={update} /><FormField label="Username" name="username" autoComplete="username" required minLength="3" maxLength="60" error={fieldErrors.username} value={form.username} onChange={update} /></div>
@@ -66,6 +66,6 @@ export default function AdminRegisterPage() {
       <button className="primary-button" disabled={submitting || otp.length !== 6}>{submitting ? 'Verifying…' : 'Verify Admin email'}</button>
       <button className="text-button" type="button" disabled={submitting} onClick={resend}>Send a new code</button>
     </form> : null}
-    {step === 'complete' ? <div className="success-state"><Alert type="success">{message}</Alert><Link className="primary-button button-link" to="/admin/login">Continue to Admin sign in</Link></div> : null}
+    {step === 'complete' ? <div className="success-state"><Alert type="success">{message}</Alert><Link className="primary-button button-link" to="/login/admin">Continue to Admin sign in</Link></div> : null}
   </AuthShell>;
 }

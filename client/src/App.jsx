@@ -31,8 +31,10 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/login/agent" element={<LoginPage />} />
+        <Route path="/login/admin" element={<AdminLoginPage />} />
+        <Route path="/login" element={<Navigate to="/login/agent" replace />} />
+        <Route path="/admin/login" element={<Navigate to="/login/admin" replace />} />
         <Route path="/admin/register" element={<AdminRegisterPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />

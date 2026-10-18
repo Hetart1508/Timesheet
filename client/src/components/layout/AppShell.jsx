@@ -20,7 +20,7 @@ export default function AppShell({ children }) {
   const { user, logout } = useAuth(); const navigate = useNavigate(); const location = useLocation(); const reduceMotion = useReducedMotion(); const [open, setOpen] = useState(false);
   const menuButtonRef = useRef(null); const closeButtonRef = useRef(null);
   const links = user.role === 'ADMIN' ? adminLinks : agentLinks;
-  const signOut = async () => { await logout(); navigate('/login', { replace: true }); };
+  const signOut = async () => { const loginPath = user.role === 'ADMIN' ? '/login/admin' : '/login/agent'; await logout(); navigate(loginPath, { replace: true }); };
   const closeNavigation = () => { setOpen(false); menuButtonRef.current?.focus(); };
   useEffect(() => {
     if (!open) return undefined;

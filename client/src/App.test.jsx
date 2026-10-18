@@ -7,18 +7,24 @@ afterEach(cleanup);
 
 describe('authentication pages', () => {
   it('renders the sign-in workflow', async () => {
-    render(<MemoryRouter initialEntries={['/login']}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/login/agent']}><App /></MemoryRouter>);
     expect(screen.getByRole('heading', { name: 'Agent sign in' })).toBeInTheDocument();
     expect(screen.getByLabelText('Agent email')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Create an account' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Use secure Admin sign in' })).toHaveAttribute('href', '/admin/login');
+    expect(screen.queryByRole('link', { name: 'Use secure Admin sign in' })).not.toBeInTheDocument();
   });
 
   it('renders the protected Admin sign-in workflow', async () => {
-    render(<MemoryRouter initialEntries={['/admin/login']}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/login/admin']}><App /></MemoryRouter>);
     expect(screen.getByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
     expect(screen.getByLabelText('Admin email')).toBeInTheDocument();
     expect(screen.getByText('Two-step verification is required for every Admin sign-in.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Use Agent sign in' })).toHaveAttribute('href', '/login/agent');
+  });
+
+  it('keeps legacy sign-in URLs working', async () => {
+    render(<MemoryRouter initialEntries={['/admin/login']}><App /></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: 'Admin sign in' })).toBeInTheDocument();
   });
 
   it('renders the one-time Admin registration workflow', async () => {

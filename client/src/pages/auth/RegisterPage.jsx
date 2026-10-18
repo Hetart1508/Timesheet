@@ -20,7 +20,7 @@ export default function RegisterPage() {
     catch (requestError) { setFieldErrors(readFieldErrors(requestError)); setError(errorMessage(requestError)); }
     finally { setSubmitting(false); }
   };
-  return <AuthShell eyebrow="Agent registration" title="Create your Agent account" description="Your email must be verified before you can sign in." footer={<>Already registered? <Link to="/login">Sign in</Link></>}>
+  return <AuthShell eyebrow="Agent registration" title="Create your Agent account" description="Your email must be verified before you can sign in." footer={<>Already registered? <Link to="/login/agent">Sign in</Link></>}>
     {message ? <div className="success-state"><Alert type="success">{message}</Alert><Link className="primary-button button-link" to={`/verify-email?email=${encodeURIComponent(form.email)}`}>Enter verification code</Link></div> :
       <form className="auth-form" onSubmit={submit}><Alert>{error}</Alert>
         <div className="two-fields"><FormField label="Full name" name="fullName" autoComplete="name" required minLength="2" maxLength="120" error={fieldErrors.fullName} value={form.fullName} onChange={update} /><FormField label="Username" name="username" autoComplete="username" required minLength="3" maxLength="60" pattern="[A-Za-z0-9._-]+" hint="Letters, numbers, dots, underscores and hyphens only." error={fieldErrors.username} value={form.username} onChange={update} /></div>

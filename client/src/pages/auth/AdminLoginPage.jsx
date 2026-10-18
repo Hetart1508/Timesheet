@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
 
   const startOver = () => { setChallenge(null); setOtp(''); setError(''); setMessage(''); };
 
-  return <AuthShell eyebrow="Protected Admin portal" title={challenge ? 'Enter your security code' : 'Admin sign in'} description={challenge ? 'Check the Admin email inbox, then enter the one-time code.' : 'Admin access always requires an email, password, and a fresh email security code.'} footer={<><span>First-time setup? <Link to="/admin/register">Create the Admin account</Link></span><span className="auth-footer-separator">Are you an Agent? <Link to="/login">Use Agent sign in</Link></span></>}>
+  return <AuthShell eyebrow="Protected Admin portal" title={challenge ? 'Enter your security code' : 'Admin sign in'} description={challenge ? 'Check the Admin email inbox, then enter the one-time code.' : 'Admin access always requires an email, password, and a fresh email security code.'} footer={<><span>First-time setup? <Link to="/admin/register">Create the Admin account</Link></span><span className="auth-footer-separator">Are you an Agent? <Link to="/login/agent">Use Agent sign in</Link></span></>}>
     <div className="security-notice"><ShieldCheck size={20} aria-hidden="true" /><span>Two-step verification is required for every Admin sign-in.</span></div>
     {!challenge ? <form className="auth-form" onSubmit={requestCode}>
       <Alert>{error}</Alert>

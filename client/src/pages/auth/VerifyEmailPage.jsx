@@ -30,7 +30,7 @@ export default function VerifyEmailPage() {
     }
   };
 
-  return <AuthShell eyebrow="Email verification" title={state.verified ? 'Your email is verified' : 'Enter your verification code'} description={state.verified ? 'Your Agent account is ready to use.' : 'Enter the six-digit code sent to your email. The code expires in 10 minutes.'} footer={state.verified ? <Link to="/login">Continue to sign in</Link> : <Link to="/resend-verification">Send a new code</Link>}>
+  return <AuthShell eyebrow="Email verification" title={state.verified ? 'Your email is verified' : 'Enter your verification code'} description={state.verified ? 'Your Agent account is ready to use.' : 'Enter the six-digit code sent to your email. The code expires in 10 minutes.'} footer={state.verified ? <Link to="/login/agent">Continue to sign in</Link> : <Link to="/resend-verification">Send a new code</Link>}>
     {state.verified ? <Alert type="success">Email verified successfully.</Alert> : <form className="auth-form" onSubmit={submit}>
       <Alert>{state.error}</Alert>
       <FormField label="Email address" name="email" type="email" autoComplete="email" required maxLength="254" error={fieldErrors.email} value={form.email} onChange={update} />
