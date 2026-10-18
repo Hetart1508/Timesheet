@@ -39,15 +39,17 @@ export class AdminRepository {
     return { rows, total: Number(counts[0].total) };
   }
 
-  async workCalendar(startDate, endDate, connection = pool) {
+  async workCalendar(startDate, endDate, agentId, connection = pool) {
+    const agentFilter = agentId ? 'AND u.id = ?' : '';
+    const values = agentId ? [startDate, endDate, agentId] : [startDate, endDate];
     const [rows] = await connection.execute(`SELECT u.id agent_id, u.full_name agent_name, u.status agent_status,
       t.work_date, COALESCE(SUM(TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at)), 0) approved_minutes
       FROM users u
       LEFT JOIN timesheets t ON t.agent_id = u.id AND t.status = 'APPROVED' AND t.work_date BETWEEN ? AND ?
       LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL
-      WHERE u.role = 'AGENT'
+      WHERE u.role = 'AGENT' ${agentFilter}
       GROUP BY u.id, u.full_name, u.status, t.work_date
-      ORDER BY u.full_name, t.work_date`, [startDate, endDate]);
+      ORDER BY u.full_name, t.work_date`, values);
     return rows;
   }
 

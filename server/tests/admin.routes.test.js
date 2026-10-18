@@ -32,9 +32,9 @@ describe('Admin API authorization', () => {
   });
 
   it('loads the approved-hours work calendar for a valid month', async () => {
-    const response = await request(adminApp).get('/api/v1/admin/work-calendar?month=2026-10').expect(200);
+    const response = await request(adminApp).get('/api/v1/admin/work-calendar?month=2026-10&agentId=42').expect(200);
     expect(response.body.data.month).toBe('2026-10');
-    expect(service.workCalendar).toHaveBeenLastCalledWith('2026-10');
+    expect(service.workCalendar).toHaveBeenLastCalledWith('2026-10', 42);
   });
 
   it('rejects an invalid work-calendar month', async () => {

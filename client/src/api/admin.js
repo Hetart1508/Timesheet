@@ -5,6 +5,7 @@ export const adminApi = {
   dashboard: async () => data(await api.get('/admin/dashboard')),
   listTimesheets: async (params) => data(await api.get('/admin/timesheets', { params })),
   workCalendar: async (month) => data(await api.get('/admin/work-calendar', { params: { month } })),
+    workCalendar: async (month, agentId) => data(await api.get('/admin/work-calendar', { params: agentId ? { month, agentId } : { month } })),
   getTimesheet: async (id) => data(await api.get(`/admin/timesheets/${id}`)).timesheet,
   reviewTimesheet: async (id, decision, comment) => data(await api.post(`/admin/timesheets/${id}/review`, { decision, comment })).timesheet,
   listAgents: async (params) => data(await api.get('/admin/agents', { params })),

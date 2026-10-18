@@ -13,6 +13,7 @@ export const adminTimesheetListSchema = envelope({ query: z.object({
 }) });
 export const adminWorkCalendarSchema = envelope({ query: z.object({
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM'),
+  agentId: id.optional(),
 }) });
 export const adminIdSchema = envelope({ params: z.object({ id }) });
 export const reviewSchema = envelope({ params: z.object({ id }), body: z.object({

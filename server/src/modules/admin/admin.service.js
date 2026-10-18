@@ -24,12 +24,12 @@ export class AdminService {
     return { timesheets: result.rows.map((row) => this.summary(row)), pagination: { page: filters.page, pageSize: filters.pageSize, total: result.total } };
   }
 
-  async workCalendar(month) {
+  async workCalendar(month, agentId) {
     const [year, monthNumber] = month.split('-').map(Number);
     const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
     const startDate = `${month}-01`;
     const endDate = `${month}-${String(daysInMonth).padStart(2, '0')}`;
-    const rows = await this.repository.workCalendar(startDate, endDate);
+    const rows = await this.repository.workCalendar(startDate, endDate, agentId);
     const agents = new Map();
     for (const row of rows) {
       const agentId = Number(row.agent_id);
