@@ -11,8 +11,7 @@ describe('timesheet presentation helpers', () => {
 
   it('formats a date-only value without shifting the calendar date', () => {
     const result = formatWorkDate('2026-10-17');
-    expect(result).toContain('17');
-    expect(result).toMatch(/2026/);
+    expect(result).toBe('17-10-2026');
   });
 
   it('exposes a label for every supported status', () => {

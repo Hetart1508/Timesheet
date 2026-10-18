@@ -6,11 +6,13 @@ import AdminReviewPage from './AdminReviewPage.jsx';
 import AuditLogPage from './AuditLogPage.jsx';
 import AdminAgentsPage from './AdminAgentsPage.jsx';
 import AdminCompaniesPage from './AdminCompaniesPage.jsx';
+import AnalyticsPage from './AnalyticsPage.jsx';
 import CompanyDirectoryPage from '../shared/CompanyDirectoryPage.jsx';
 import { adminApi } from '../../api/admin.js';
+import { currentBusinessDate } from '../../utils/business-time.js';
 
 vi.mock('../../api/admin.js', () => ({
-  adminApi: { listTimesheets: vi.fn(), getTimesheet: vi.fn(), listAgents: vi.fn(), listAudits: vi.fn(), listCompanies: vi.fn() },
+  adminApi: { listTimesheets: vi.fn(), getTimesheet: vi.fn(), listAgents: vi.fn(), listAudits: vi.fn(), listCompanies: vi.fn(), analytics: vi.fn() },
 }));
 vi.mock('../../api/client.js', () => ({ errorMessage: (error) => error.message }));
 vi.mock('../../context/AuthContext.jsx', () => ({
@@ -37,7 +39,7 @@ const auditResult = {
 const agentsResult = { agents: [{ id: 4, fullName: 'Taylor Agent', username: 'taylor', email: 'taylor@example.com', emailVerified: true, status: 'ACTIVE', totalTimesheets: 3, totalVisits: 4, totalDuration: { minutes: 90, hours: 1.5 } }], pagination: { page: 1, pageSize: 100, total: 1 } };
 const companiesResult = { companies: [{ id: 7, companyName: 'Northwind Labs', address: '14 Market Street', creatorName: 'Taylor Agent', status: 'ACTIVE', reviewStatus: 'APPROVED', visitCount: 2 }], pagination: { page: 1, pageSize: 100, total: 1 } };
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); sessionStorage.removeItem('timesheet.clearFiltersOnReturn'); });
 beforeEach(() => {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   adminApi.listTimesheets.mockResolvedValue(timesheetResult);
@@ -45,9 +47,38 @@ beforeEach(() => {
   adminApi.listAgents.mockResolvedValue(agentsResult);
   adminApi.listAudits.mockResolvedValue(auditResult);
   adminApi.listCompanies.mockResolvedValue(companiesResult);
+  adminApi.analytics.mockResolvedValue({ daily: [{ workDate: '2026-10-16', duration: { minutes: 60, hours: 1 }, activeAgents: 1, timesheets: 1, visits: 1, approved: 0, pending: 1 }], monthly: [], agents: [], companies: [] });
 });
 
 describe('admin list table controls', () => {
+  it('clears the review status filter when returning from an individual review', async () => {
+    sessionStorage.setItem('timesheet.clearFiltersOnReturn', 'true');
+    render(<MemoryRouter initialEntries={['/admin/reviews']}><AdminTimesheetsPage defaultStatus="SUBMITTED" /></MemoryRouter>);
+
+    await waitFor(() => expect(adminApi.listTimesheets).toHaveBeenCalled());
+    expect(adminApi.listTimesheets.mock.calls[0][0]).not.toHaveProperty('status');
+    expect(sessionStorage.getItem('timesheet.clearFiltersOnReturn')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'All timesheets' })).toBeInTheDocument();
+  });
+
+  it('does not allow future dates in the timesheet range filters', async () => {
+    render(<MemoryRouter><AdminTimesheetsPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /Filters/ }));
+
+    expect(screen.getByLabelText('From')).toHaveAttribute('max', currentBusinessDate());
+    expect(screen.getByLabelText('To')).toHaveAttribute('max', currentBusinessDate());
+  });
+
+  it('formats daily analytics chart labels as DD-MM-YYYY', async () => {
+    render(<MemoryRouter><AnalyticsPage /></MemoryRouter>);
+
+    expect(screen.getByLabelText('Analytics start date')).toHaveAttribute('max', currentBusinessDate());
+    expect(screen.getByLabelText('Analytics end date')).toHaveAttribute('max', currentBusinessDate());
+    const chart = await screen.findByRole('img', { name: 'Recorded hours bar chart' });
+    expect(chart).toHaveTextContent('16-10-2026');
+    expect(chart).not.toHaveTextContent('10-16');
+  });
+
   it('opens the full timesheet inspection from the Inspect action', async () => {
     render(<MemoryRouter initialEntries={['/admin/timesheets']}><Routes>
       <Route path="/admin/timesheets" element={<AdminTimesheetsPage />} />

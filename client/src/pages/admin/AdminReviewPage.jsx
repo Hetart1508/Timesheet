@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, Clock3, History, Send, XCircle } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell.jsx';
 import Alert from '../../components/common/Alert.jsx';
 import RequestState from '../../components/common/RequestState.jsx';
@@ -11,9 +11,13 @@ import { formatDuration, formatWorkDate } from '../../api/timesheets.js';
 import { formatBusinessDateTime } from '../../utils/business-time.js';
 
 export default function AdminReviewPage() {
+  const location = useLocation();
   const { id } = useParams(); const [sheet, setSheet] = useState(null); const [error, setError] = useState(''); const [loadError, setLoadError] = useState(''); const [success, setSuccess] = useState('');
   const [decision, setDecision] = useState(''); const [comment, setComment] = useState(''); const [busy, setBusy] = useState(false);
   const load = () => { setSheet(null); setLoadError(''); return adminApi.getTimesheet(id).then(setSheet).catch((err) => setLoadError(errorMessage(err))); };
+  useEffect(() => {
+    if (location.state?.clearFiltersOnReturn) window.sessionStorage.setItem('timesheet.clearFiltersOnReturn', 'true');
+  }, [location.state]);
   useEffect(() => { load(); }, [id]);
   const review = async (event) => { event.preventDefault(); const label = decision === 'APPROVED' ? 'Approve' : decision === 'REJECTED' ? 'Reject' : 'Request changes for'; if (!window.confirm(`${label} ${sheet.agent.fullName}'s timesheet?`)) return; setBusy(true); setError(''); try { const updated = await adminApi.reviewTimesheet(id, decision, comment); setSheet(updated); setDecision(''); setComment(''); setSuccess('Review decision recorded.'); } catch (err) { setError(errorMessage(err)); } finally { setBusy(false); } };
   if (!sheet) return <AppShell><RequestState error={loadError} label="Loading review…" onRetry={load} /></AppShell>;

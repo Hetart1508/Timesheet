@@ -6,10 +6,12 @@ import RequestState from '../../components/common/RequestState.jsx';
 import StatusBadge from '../../components/common/StatusBadge.jsx';
 import { agentApi, formatDuration, formatWorkDate, statusLabels } from '../../api/timesheets.js';
 import { errorMessage } from '../../api/client.js';
+import { currentBusinessDate } from '../../utils/business-time.js';
 
 const initialFilters = { startDate: '', endDate: '', status: '', page: 1, pageSize: 20 };
 
 export default function TimesheetHistoryPage() {
+  const today = currentBusinessDate();
   const [filters, setFilters] = useState(initialFilters);
   const [applied, setApplied] = useState(initialFilters);
   const [result, setResult] = useState(null);
@@ -28,8 +30,8 @@ export default function TimesheetHistoryPage() {
     <section className="workspace-heading"><p className="eyebrow">Timesheet history</p><h1>Your work records</h1><p>Find a daily timesheet, review its visits, or continue a correction requested by an administrator.</p></section>
     <section className="content-card section-block">
       <details className="filter-disclosure"><summary><Search size={17} /> Filter timesheets</summary><form className="filter-bar" onSubmit={submitFilters}>
-        <label><span>From</span><input type="date" value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} /></label>
-        <label><span>To</span><input type="date" value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} /></label>
+        <label><span>From</span><input type="date" max={today} value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} /></label>
+        <label><span>To</span><input type="date" max={today} value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} /></label>
         <label><span>Status</span><select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         <button className="secondary-button" type="submit"><Search size={17} /> Apply filters</button>
       </form></details>
