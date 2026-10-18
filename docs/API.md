@@ -102,5 +102,6 @@ All routes are under `/api/v1/admin` and require an active Admin session. Mutati
 | GET | `/analytics` | Date-scoped daily, monthly, Agent, and company aggregation. |
 | GET | `/exports/timesheets.csv` | Filtered visit-level CSV download. |
 | GET | `/exports/timesheets.xlsx` | Filtered visit-level XLSX download. |
+| GET | `/invoices/:agentId?month=YYYY-MM` | Generate an audited PDF invoice for the Agent’s approved, non-deleted visits in that month. |
 
-Exports accept optional `agentId`, `status`, `startDate`, and `endDate` query parameters. Export responses are files rather than JSON envelopes; formula-like user text is escaped and each export is audited.
+Exports accept optional `agentId`, `status`, `startDate`, and `endDate` query parameters. Invoice amounts use Gold (INR 1,000), Silver (INR 800), and Bronze (INR 600) per approved visit. Export/invoice responses are files rather than JSON envelopes; formula-like export text is escaped and file generation is audited.

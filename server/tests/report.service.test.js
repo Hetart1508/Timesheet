@@ -37,3 +37,31 @@ describe('secure spreadsheet exports', () => {
     expect(repository.analytics).not.toHaveBeenCalled();
   });
 });
+
+describe('monthly Agent invoices', () => {
+  const invoiceRows = [
+    { agent_id: 7, agent_name: 'Taylor Agent', agent_email: 'taylor@example.com', work_date: '2026-09-01', visit_id: 1, company_name: 'Gold Co', category: 'Gold', purpose: 'Visit', check_in_at: new Date('2026-09-01T04:30:00Z'), check_out_at: new Date('2026-09-01T05:30:00Z') },
+    { agent_id: 7, agent_name: 'Taylor Agent', agent_email: 'taylor@example.com', work_date: '2026-09-02', visit_id: 2, company_name: 'Silver Co', category: 'Silver', purpose: 'Visit', check_in_at: new Date('2026-09-02T04:30:00Z'), check_out_at: new Date('2026-09-02T05:30:00Z') },
+    { agent_id: 7, agent_name: 'Taylor Agent', agent_email: 'taylor@example.com', work_date: '2026-09-03', visit_id: 3, company_name: 'Bronze Co', category: 'Bronze', purpose: 'Visit', check_in_at: new Date('2026-09-03T04:30:00Z'), check_out_at: new Date('2026-09-03T05:30:00Z') },
+  ];
+
+  it('calculates the configured rates and formats visit times in IST', async () => {
+    const repository = { invoiceRows: vi.fn(async () => invoiceRows) };
+    const invoice = await new ReportService(repository).invoice(7, '2026-09');
+    expect(invoice.items.map(({ rate }) => rate)).toEqual([1000, 800, 600]);
+    expect(invoice.totalVisits).toBe(3);
+    expect(invoice.totalAmount).toBe(2400);
+    expect(invoice.items[0].checkInTime).toBe('10:00');
+  });
+
+  it('creates a PDF invoice document', async () => {
+    const invoice = await new ReportService({ invoiceRows: vi.fn(async () => invoiceRows) }).invoice(7, '2026-09');
+    const pdf = await new ReportService({}).toInvoicePdf(invoice);
+    expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
+  });
+
+  it('rejects an invoice with no approved visits', async () => {
+    const repository = { invoiceRows: vi.fn(async () => []) };
+    await expect(new ReportService(repository).invoice(7, '2026-09')).rejects.toMatchObject({ code: 'INVOICE_NO_APPROVED_VISITS' });
+  });
+});

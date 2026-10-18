@@ -25,6 +25,7 @@ const AdminCompaniesPage = lazy(() => import('./pages/admin/AdminCompaniesPage.j
 const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage.jsx'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage.jsx'));
 const ExportCenterPage = lazy(() => import('./pages/admin/ExportCenterPage.jsx'));
+const AdminInvoicesPage = lazy(() => import('./pages/admin/AdminInvoicesPage.jsx'));
 
 export default function App() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/admin/audits" element={<AuditLogPage />} />
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
             <Route path="/admin/exports" element={<ExportCenterPage />} />
+            <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
           </Route>
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

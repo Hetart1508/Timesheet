@@ -25,6 +25,17 @@ beforeEach(() => {
 });
 
 describe('Timesheet company search', () => {
+  it('disables submission until a non-draft timesheet is edited', async () => {
+    agentApi.getTimesheet.mockResolvedValue({
+      id: 5, workDate: '2026-10-16', status: 'SUBMITTED',
+      dailySummary: 'Completed customer visits and scheduled follow-ups.', reviewComment: '',
+      visits: [{ id: 1, companyName: 'Existing Company', duration: { minutes: 30 }, checkInTime: '10:00', checkOutTime: '10:30', category: 'Gold', purpose: 'Follow-up', visitNotes: 'Discussed next steps.', contactPerson: 'Ravi' }],
+    });
+    render(<MemoryRouter initialEntries={['/timesheets/5']}><Routes><Route path="/timesheets/:id" element={<TimesheetPage />} /></Routes></MemoryRouter>);
+
+    expect(await screen.findByRole('button', { name: 'Submitted for review' })).toBeDisabled();
+  });
+
   it('shows company suggestions after a 500ms debounce', async () => {
     render(<MemoryRouter initialEntries={['/timesheets/5']}><Routes><Route path="/timesheets/:id" element={<TimesheetPage />} /></Routes></MemoryRouter>);
     fireEvent.click(await screen.findByRole('button', { name: 'Add visit' }));

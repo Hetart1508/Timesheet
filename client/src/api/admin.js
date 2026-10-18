@@ -16,4 +16,5 @@ export const adminApi = {
   listAudits: async (params) => data(await api.get('/admin/audits', { params })),
   analytics: async (params) => data(await api.get('/admin/analytics', { params })),
   exportTimesheets: async (format, params) => api.get(`/admin/exports/timesheets.${format}`, { params, responseType: 'blob' }),
+  downloadInvoice: async (agentId, month) => api.get(`/admin/invoices/${agentId}`, { params: { month }, responseType: 'blob' }),
 };

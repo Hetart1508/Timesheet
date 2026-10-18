@@ -5,7 +5,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import { currentBusinessDate } from '../../utils/business-time.js';
 import { ReportRepository } from './report.repository.js';
 import { ReportService } from './report.service.js';
-import { analyticsSchema, exportSchema } from './report.schemas.js';
+import { analyticsSchema, exportSchema, invoiceSchema } from './report.schemas.js';
 
 export function createReportRouter(options = {}) {
   const repository = options.repository || new ReportRepository();
@@ -14,6 +14,16 @@ export function createReportRouter(options = {}) {
   const router = Router();
   router.use(auth, requireRole('ADMIN'));
   router.get('/analytics', validate(analyticsSchema), asyncHandler(async (req, res) => res.json({ success: true, data: await service.analytics(req.validated.query), message: 'Analytics loaded' })));
+  router.get('/invoices/:agentId', validate(invoiceSchema), asyncHandler(async (req, res) => {
+    const invoice = await service.invoice(req.validated.params.agentId, req.validated.query.month);
+    const output = await service.toInvoicePdf(invoice);
+    await repository.auditInvoice(req.user.id, invoice, req.ip);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="agent_invoice_${invoice.agent.id}_${invoice.month}.pdf"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(output);
+  }));
   const sendExport = (format) => asyncHandler(async (req, res) => {
     const rows = await service.rows(req.validated.query);
     const filename = `timesheet_export_${currentBusinessDate()}.${format}`;

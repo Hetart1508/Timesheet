@@ -128,6 +128,7 @@ export class TimesheetService {
     const result = await this.repository.transaction(async (connection) => {
       const timesheet = await this.repository.findOwned(id, user.id, connection, true);
       if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
+      if (timesheet.status !== 'DRAFT') throw new AppError(409, 'TIMESHEET_NOT_DRAFT', 'Edit the timesheet before submitting it again');
       if (!timesheet.daily_summary || timesheet.daily_summary.trim().length < 20) throw new AppError(422, 'DECLARATION_REQUIRED', 'Enter a declaration of at least 20 characters before submitting');
       const facts = await this.repository.submissionFacts(id, connection);
       if (!facts.visitCount) throw new AppError(422, 'VISITS_REQUIRED', 'Add at least one company visit before submitting');

@@ -91,4 +91,14 @@ describe('Agent timesheet business rules', () => {
     expect(repository.submit).toHaveBeenCalledWith(7, 'SUBMITTED', expect.anything());
     expect(repository.audit).toHaveBeenCalledWith(expect.objectContaining({ action: 'TIMESHEET_SUBMITTED', actorUserId: 3 }), expect.anything());
   });
+
+  it('rejects submitting a timesheet that is not a draft', async () => {
+    const repository = makeRepository({ findOwned: vi.fn(async () => ({ id: 7, status: 'SUBMITTED', daily_summary: 'A complete daily declaration.' })) });
+    const service = new TimesheetService(repository, {});
+
+    await expect(service.submit(7, { id: 3, fullName: 'Asha Patel' })).rejects.toMatchObject({
+      statusCode: 409, code: 'TIMESHEET_NOT_DRAFT',
+    });
+    expect(repository.submit).not.toHaveBeenCalled();
+  });
 });

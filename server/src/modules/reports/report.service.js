@@ -1,9 +1,12 @@
 import ExcelJS from 'exceljs';
+import PDFDocument from 'pdfkit';
 import { AppError } from '../../utils/app-error.js';
-import { utcToIstTime } from '../../utils/business-time.js';
+import { currentBusinessDate, utcToIstTime } from '../../utils/business-time.js';
 
 const dateOnly = (value) => value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
 const duration = (value) => ({ minutes: Number(value || 0), hours: Math.round((Number(value || 0) / 60) * 100) / 100 });
+export const invoiceRates = Object.freeze({ Gold: 1000, Silver: 800, Bronze: 600 });
+const invoiceAmount = (value) => `INR ${Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function sanitizeForSpreadsheet(value) {
   if (value === null || value === undefined) return '';
@@ -42,6 +45,92 @@ export class ReportService {
   }
 
   async rows(filters) { this.validateRange(filters); return (await this.repository.exportRows(filters)).map(mapExport); }
+
+  async invoice(agentId, month) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new AppError(422, 'INVALID_INVOICE_MONTH', 'Use a valid month in YYYY-MM format');
+    const rows = await this.repository.invoiceRows(agentId, month);
+    if (!rows.length) throw new AppError(404, 'INVOICE_NO_APPROVED_VISITS', 'No approved visits were found for this Agent and month');
+    const items = rows.map((row) => {
+      const category = invoiceRates[row.category] ? row.category : 'Silver';
+      const rate = invoiceRates[category];
+      return {
+        visitId: Number(row.visit_id), workDate: dateOnly(row.work_date), companyName: row.company_name,
+        purpose: row.purpose, category, checkInTime: utcToIstTime(row.check_in_at), checkOutTime: utcToIstTime(row.check_out_at),
+        rate, amount: rate,
+      };
+    });
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+    return {
+      invoiceNumber: `INV-${agentId}-${month.replace('-', '')}`, generatedOn: currentBusinessDate(), month,
+      agent: { id: Number(rows[0].agent_id), fullName: rows[0].agent_name, email: rows[0].agent_email },
+      items, totalVisits: items.length, totalAmount,
+    };
+  }
+
+  toInvoicePdf(invoice) {
+    return new Promise((resolve, reject) => {
+      const document = new PDFDocument({ size: 'A4', margin: 46, bufferPages: true });
+      const chunks = [];
+      document.on('data', (chunk) => chunks.push(chunk));
+      document.on('end', () => resolve(Buffer.concat(chunks)));
+      document.on('error', reject);
+
+      const pageWidth = document.page.width - document.page.margins.left - document.page.margins.right;
+      const columns = [
+        { label: 'Date', width: 55 }, { label: 'Company / purpose', width: 151 },
+        { label: 'Tier', width: 52 }, { label: 'Time (IST)', width: 76 },
+        { label: 'Rate', width: 78 }, { label: 'Amount', width: pageWidth - 412 },
+      ];
+      const left = document.page.margins.left;
+      const drawTableHeader = (top) => {
+        document.save().fillColor('#eef6ff').rect(left, top, pageWidth, 23).fill().restore();
+        document.font('Helvetica-Bold').fontSize(8).fillColor('#1f2937');
+        let x = left;
+        for (const column of columns) {
+          document.text(column.label, x + 5, top + 7, { width: column.width - 10, lineBreak: false });
+          x += column.width;
+        }
+        return top + 23;
+      };
+
+      document.fillColor('#1f2937').font('Helvetica-Bold').fontSize(20).text('AGENT VISIT INVOICE');
+      document.moveDown(0.3).font('Helvetica').fontSize(9).fillColor('#5f6368')
+        .text(`Invoice: ${invoice.invoiceNumber}`)
+        .text(`Billing month: ${invoice.month}    Generated: ${invoice.generatedOn} IST`)
+        .moveDown(0.35).fillColor('#1f2937').font('Helvetica-Bold').fontSize(11).text(invoice.agent.fullName)
+        .font('Helvetica').fontSize(9).fillColor('#5f6368').text(`Agent ID: ${invoice.agent.id}    ${invoice.agent.email}`)
+        .moveDown(0.8);
+
+      let y = drawTableHeader(document.y);
+      for (let index = 0; index < invoice.items.length; index += 1) {
+        const item = invoice.items[index];
+        const description = `${item.companyName}\n${item.purpose}`;
+        document.font('Helvetica').fontSize(8);
+        const rowHeight = Math.max(31, document.heightOfString(description, { width: columns[1].width - 10 }) + 12);
+        if (y + rowHeight > document.page.height - 70) {
+          document.addPage();
+          y = drawTableHeader(document.page.margins.top);
+        }
+        if (index % 2 === 1) document.save().fillColor('#fafbfc').rect(left, y, pageWidth, rowHeight).fill().restore();
+        document.strokeColor('#e5e7eb').moveTo(left, y + rowHeight).lineTo(left + pageWidth, y + rowHeight).stroke();
+        const values = [item.workDate, description, item.category, `${item.checkInTime} - ${item.checkOutTime}`, invoiceAmount(item.rate), invoiceAmount(item.amount)];
+        let x = left;
+        for (let cell = 0; cell < columns.length; cell += 1) {
+          document.font(cell === 1 ? 'Helvetica' : 'Helvetica').fontSize(8).fillColor('#1f2937')
+            .text(values[cell], x + 5, y + 6, { width: columns[cell].width - 10, height: rowHeight - 8, ellipsis: true });
+          x += columns[cell].width;
+        }
+        y += rowHeight;
+      }
+
+      if (y + 58 > document.page.height - 46) { document.addPage(); y = document.page.margins.top; }
+      document.moveTo(left, y + 12).lineTo(left + pageWidth, y + 12).lineWidth(1.2).strokeColor('#2875d1').stroke();
+      document.font('Helvetica').fontSize(9).fillColor('#1f2937').text(`Approved visits: ${invoice.totalVisits}`, left, y + 22);
+      document.font('Helvetica-Bold').fontSize(13).text(`Total due: ${invoiceAmount(invoice.totalAmount)}`, left, y + 20, { width: pageWidth, align: 'right' });
+      document.font('Helvetica').fontSize(8).fillColor('#5f6368').text('Includes approved, non-deleted visits only. No tax added.', left, y + 43, { width: pageWidth });
+      document.end();
+    });
+  }
 
   toCsv(rows) {
     const quote = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
