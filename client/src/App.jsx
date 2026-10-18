@@ -26,6 +26,7 @@ const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage.jsx'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage.jsx'));
 const ExportCenterPage = lazy(() => import('./pages/admin/ExportCenterPage.jsx'));
 const AdminInvoicesPage = lazy(() => import('./pages/admin/AdminInvoicesPage.jsx'));
+const WorkCalendarPage = lazy(() => import('./pages/admin/WorkCalendarPage.jsx'));
 
 export default function App() {
   return (
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/admin/reviews" element={<AdminTimesheetsPage defaultStatus="SUBMITTED" />} />
             <Route path="/admin/timesheets" element={<AdminTimesheetsPage />} />
             <Route path="/admin/timesheets/:id" element={<AdminReviewPage />} />
+            <Route path="/admin/work-calendar" element={<WorkCalendarPage />} />
             <Route path="/admin/agents" element={<AdminAgentsPage />} />
             <Route path="/admin/companies" element={<AdminCompaniesPage />} />
             <Route path="/admin/audits" element={<AuditLogPage />} />

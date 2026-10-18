@@ -24,6 +24,26 @@ export class AdminService {
     return { timesheets: result.rows.map((row) => this.summary(row)), pagination: { page: filters.page, pageSize: filters.pageSize, total: result.total } };
   }
 
+  async workCalendar(month) {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const startDate = `${month}-01`;
+    const endDate = `${month}-${String(daysInMonth).padStart(2, '0')}`;
+    const rows = await this.repository.workCalendar(startDate, endDate);
+    const agents = new Map();
+    for (const row of rows) {
+      const agentId = Number(row.agent_id);
+      if (!agents.has(agentId)) {
+        agents.set(agentId, { id: agentId, fullName: row.agent_name, status: row.agent_status, approvedHoursByDate: {} });
+      }
+      if (row.work_date) {
+        const date = dateOnly(row.work_date);
+        agents.get(agentId).approvedHoursByDate[date] = Math.round((Number(row.approved_minutes || 0) / 60) * 100) / 100;
+      }
+    }
+    return { month, agents: [...agents.values()] };
+  }
+
   async timesheet(id) {
     const row = await this.repository.timesheetDetail(id);
     if (!row) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');

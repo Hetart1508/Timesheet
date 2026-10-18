@@ -6,6 +6,7 @@ import { createAdminRouter } from '../src/modules/admin/admin.routes.js';
 const service = {
   dashboard: vi.fn(async () => ({ metrics: { pendingReviews: 0 }, pending: [] })),
   listTimesheets: vi.fn(async (filters) => ({ timesheets: [], pagination: { page: filters.page, pageSize: filters.pageSize, total: 0 } })),
+  workCalendar: vi.fn(async (month) => ({ month, agents: [] })),
   audits: vi.fn(async (filters) => ({ audits: [], pagination: { page: filters.page, pageSize: filters.pageSize, total: 0 } })),
 };
 const agentApp = createApp({ adminRouter: createAdminRouter({ service, authenticate: (req, _res, next) => { req.user = { id: 2, role: 'AGENT' }; next(); } }) });
@@ -28,6 +29,18 @@ describe('Admin API authorization', () => {
     expect(service.listTimesheets).toHaveBeenLastCalledWith(expect.objectContaining({
       search: 'asha', sortBy: 'agentName', sortOrder: 'asc', page: 2, pageSize: 50,
     }));
+  });
+
+  it('loads the approved-hours work calendar for a valid month', async () => {
+    const response = await request(adminApp).get('/api/v1/admin/work-calendar?month=2026-10').expect(200);
+    expect(response.body.data.month).toBe('2026-10');
+    expect(service.workCalendar).toHaveBeenLastCalledWith('2026-10');
+  });
+
+  it('rejects an invalid work-calendar month', async () => {
+    service.workCalendar.mockClear();
+    await request(adminApp).get('/api/v1/admin/work-calendar?month=2026-13').expect(422);
+    expect(service.workCalendar).not.toHaveBeenCalled();
   });
 
   it('accepts searchable, sortable, paginated Admin audit queries', async () => {

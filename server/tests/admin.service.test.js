@@ -17,6 +17,22 @@ function repository(overrides = {}) {
 }
 
 describe('Admin review workflow', () => {
+  it('groups approved hours by Agent and date for the selected month', async () => {
+    const rows = [
+      { agent_id: 4, agent_name: 'Asha Patel', agent_status: 'ACTIVE', work_date: '2024-02-29', approved_minutes: 150 },
+      { agent_id: 7, agent_name: 'Morgan Lee', agent_status: 'INACTIVE', work_date: null, approved_minutes: 0 },
+    ];
+    const repo = repository({ workCalendar: vi.fn(async () => rows) });
+
+    const result = await new AdminService(repo).workCalendar('2024-02');
+
+    expect(repo.workCalendar).toHaveBeenCalledWith('2024-02-01', '2024-02-29');
+    expect(result.agents).toEqual([
+      { id: 4, fullName: 'Asha Patel', status: 'ACTIVE', approvedHoursByDate: { '2024-02-29': 2.5 } },
+      { id: 7, fullName: 'Morgan Lee', status: 'INACTIVE', approvedHoursByDate: {} },
+    ]);
+  });
+
   it('includes visit category in the Admin timesheet detail', async () => {
     const row = {
       ...submitted,

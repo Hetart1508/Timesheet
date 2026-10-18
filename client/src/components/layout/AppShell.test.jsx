@@ -45,4 +45,9 @@ describe('AppShell mobile navigation', () => {
     expect(await screen.findByRole('heading', { name: 'Agent directory' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Agents' })).toHaveClass('active');
   });
+
+  it('shows the Work calendar in Admin navigation', () => {
+    render(<MemoryRouter><AppShell><h1>Workspace</h1></AppShell></MemoryRouter>);
+    expect(screen.getByRole('link', { name: 'Work calendar' })).toHaveAttribute('href', '/admin/work-calendar');
+  });
 });

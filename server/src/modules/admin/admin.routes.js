@@ -7,7 +7,7 @@ import { AdminRepository } from './admin.repository.js';
 import { AdminService } from './admin.service.js';
 import { EmailService } from '../../services/email/email.service.js';
 import { AuthRepository } from '../auth/auth.repository.js';
-import { adminIdSchema, adminTimesheetListSchema, agentListSchema, agentStatusSchema, auditListSchema, companyAdminListSchema, companyAdminUpdateSchema, reviewSchema } from './admin.schemas.js';
+import { adminIdSchema, adminTimesheetListSchema, adminWorkCalendarSchema, agentListSchema, agentStatusSchema, auditListSchema, companyAdminListSchema, companyAdminUpdateSchema, reviewSchema } from './admin.schemas.js';
 
 export function createAdminRouter(options = {}) {
   const service = options.service || new AdminService(new AdminRepository(), new EmailService(new AuthRepository()));
@@ -16,6 +16,7 @@ export function createAdminRouter(options = {}) {
   router.use(auth, requireRole('ADMIN'));
   router.get('/dashboard', asyncHandler(async (_req, res) => res.json({ success: true, data: await service.dashboard(), message: 'Admin dashboard loaded' })));
   router.get('/timesheets', validate(adminTimesheetListSchema), asyncHandler(async (req, res) => res.json({ success: true, data: await service.listTimesheets(req.validated.query), message: 'Timesheets loaded' })));
+  router.get('/work-calendar', validate(adminWorkCalendarSchema), asyncHandler(async (req, res) => res.json({ success: true, data: await service.workCalendar(req.validated.query.month), message: 'Work calendar loaded' })));
   router.get('/timesheets/:id', validate(adminIdSchema), asyncHandler(async (req, res) => res.json({ success: true, data: { timesheet: await service.timesheet(req.validated.params.id) }, message: 'Timesheet loaded' })));
   router.post('/timesheets/:id/review', requireCsrf, validate(reviewSchema), asyncHandler(async (req, res) => res.json({ success: true, data: { timesheet: await service.review(req.validated.params.id, req.user, req.validated.body, { ip: req.ip }) }, message: 'Review recorded' })));
   router.get('/agents', validate(agentListSchema), asyncHandler(async (req, res) => res.json({ success: true, data: await service.agents(req.validated.query), message: 'Agents loaded' })));

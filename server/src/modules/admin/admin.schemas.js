@@ -11,6 +11,9 @@ export const adminTimesheetListSchema = envelope({ query: z.object({
   sortBy: z.enum(['workDate', 'agentName', 'visitCount', 'duration', 'status']).default('workDate'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'), ...paging,
 }) });
+export const adminWorkCalendarSchema = envelope({ query: z.object({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Use YYYY-MM'),
+}) });
 export const adminIdSchema = envelope({ params: z.object({ id }) });
 export const reviewSchema = envelope({ params: z.object({ id }), body: z.object({
   decision: z.enum(['APPROVED', 'REJECTED', 'CHANGES_REQUESTED']),

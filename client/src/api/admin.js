@@ -4,6 +4,7 @@ const data = (response) => response.data.data;
 export const adminApi = {
   dashboard: async () => data(await api.get('/admin/dashboard')),
   listTimesheets: async (params) => data(await api.get('/admin/timesheets', { params })),
+  workCalendar: async (month) => data(await api.get('/admin/work-calendar', { params: { month } })),
   getTimesheet: async (id) => data(await api.get(`/admin/timesheets/${id}`)).timesheet,
   reviewTimesheet: async (id, decision, comment) => data(await api.post(`/admin/timesheets/${id}/review`, { decision, comment })).timesheet,
   listAgents: async (params) => data(await api.get('/admin/agents', { params })),
