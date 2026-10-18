@@ -2,6 +2,11 @@
 
 A production-minded React, Express and MySQL application for field-agent timesheets, company visits, approvals, analytics and audit history.
 
+## User training guides
+
+- [Admin User Guide](docs/ADMIN_USER_GUIDE.md)
+- [Agent User Guide](docs/AGENT_USER_GUIDE.md)
+
 Development is intentionally phase-gated so the frontend, backend and database can be tested independently. See [the implementation plan](docs/IMPLEMENTATION_PLAN.md) for current status.
 
 ## Current checkpoint
