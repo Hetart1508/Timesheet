@@ -17,11 +17,12 @@ export const visitSchema = envelope({
   body: z.object({
     companyId: id,
     category: z.enum(['Gold', 'Silver', 'Bronze']),
+    mdr: z.enum(['Level 1', 'Level 2', 'Level 3']).default('Level 1'),
     contactPerson: z.string().trim().min(2).max(120),
-    purpose: z.string().trim().min(2).max(500),
+    purpose: z.string().trim().max(500).optional().default(''),
     visitNotes: z.string().trim().min(2).max(5000),
-    checkInTime: time,
-    checkOutTime: time,
+    checkInTime: time.optional(),
+    checkOutTime: time.optional(),
   }).strict(),
 });
 export const updateVisitSchema = envelope({

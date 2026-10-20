@@ -23,7 +23,7 @@ export class TimesheetService {
       reviewComment: row.review_comment || null,
       visits: row.visits.map((visit) => ({
         id: Number(visit.id), companyId: Number(visit.company_id), companyName: visit.company_name_snapshot,
-        category: visit.category, contactPerson: visit.contact_person, purpose: visit.purpose, visitNotes: visit.visit_notes,
+        category: visit.category, mdr: visit.mdr || 'Level 1', contactPerson: visit.contact_person, purpose: visit.purpose, visitNotes: visit.visit_notes,
         checkInTime: utcToIstTime(visit.check_in_at), checkOutTime: utcToIstTime(visit.check_out_at),
         duration: minutesLabel(visit.duration_minutes),
       })),
@@ -72,11 +72,20 @@ export class TimesheetService {
     return this.get(id, agentId);
   }
 
-  visitTimes(workDate, input) {
-    const checkInAt = istLocalToUtc(workDate, input.checkInTime);
-    const checkOutAt = istLocalToUtc(workDate, input.checkOutTime);
-    if (checkOutAt <= checkInAt) throw new AppError(422, 'INVALID_VISIT_DURATION', 'Check-out time must be later than check-in time');
-    return { checkInAt, checkOutAt };
+  visitTimes(workDate, input, existingVisits = []) {
+    if (input.checkInTime && input.checkOutTime) {
+      const checkInAt = istLocalToUtc(workDate, input.checkInTime);
+      const checkOutAt = istLocalToUtc(workDate, input.checkOutTime);
+      if (checkOutAt <= checkInAt) throw new AppError(422, 'INVALID_VISIT_DURATION', 'Check-out time must be later than check-in time');
+      return { checkInAt, checkOutAt };
+    }
+    // Auto-assign a non-overlapping 1-hour slot
+    const sorted = [...existingVisits].sort((a, b) => (a.check_out_at > b.check_out_at ? 1 : -1));
+    const lastOut = sorted.length ? new Date(sorted[sorted.length - 1].check_out_at) : null;
+    const base = lastOut || new Date(`${workDate}T03:30:00.000Z`); // 09:00 IST
+    const checkInAt = new Date(base.getTime());
+    const checkOutAt = new Date(base.getTime() + 60 * 60 * 1000);
+    return { checkInAt: checkInAt.toISOString().replace('T', ' ').slice(0, 23), checkOutAt: checkOutAt.toISOString().replace('T', ' ').slice(0, 23) };
   }
 
   async addVisit(timesheetId, agentId, input, request = {}) {
@@ -85,7 +94,8 @@ export class TimesheetService {
       if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
       const company = await this.repository.getCompany(input.companyId, connection);
       if (!company) throw new AppError(422, 'COMPANY_NOT_FOUND', 'Select an active company');
-      const { checkInAt, checkOutAt } = this.visitTimes(dateOnly(timesheet.work_date), input);
+      const existingVisits = (await this.repository.detail(timesheetId, agentId, connection))?.visits || [];
+      const { checkInAt, checkOutAt } = this.visitTimes(dateOnly(timesheet.work_date), input, existingVisits);
       if (await this.repository.overlappingVisit(timesheetId, checkInAt, checkOutAt, null, connection)) throw new AppError(409, 'VISIT_OVERLAP', 'This visit overlaps another recorded visit');
       const visitId = await this.repository.createVisit({ ...input, timesheetId, userId: agentId, companyName: company.company_name, checkInAt, checkOutAt }, connection);
       await this.repository.reopenAfterEdit(timesheet, connection);
@@ -102,7 +112,15 @@ export class TimesheetService {
       timesheetId = visit.timesheet_id;
       const company = await this.repository.getCompany(input.companyId, connection);
       if (!company) throw new AppError(422, 'COMPANY_NOT_FOUND', 'Select an active company');
-      const { checkInAt, checkOutAt } = this.visitTimes(dateOnly(visit.work_date), input);
+      // Retain existing times when not provided (In/Out removed from agent form)
+      const effectiveInput = {
+        ...input,
+        checkInTime: input.checkInTime || null,
+        checkOutTime: input.checkOutTime || null,
+      };
+      const checkInAt = effectiveInput.checkInTime ? istLocalToUtc(dateOnly(visit.work_date), effectiveInput.checkInTime) : visit.check_in_at;
+      const checkOutAt = effectiveInput.checkOutTime ? istLocalToUtc(dateOnly(visit.work_date), effectiveInput.checkOutTime) : visit.check_out_at;
+      if (checkOutAt <= checkInAt) throw new AppError(422, 'INVALID_VISIT_DURATION', 'Check-out time must be later than check-in time');
       if (await this.repository.overlappingVisit(timesheetId, checkInAt, checkOutAt, visitId, connection)) throw new AppError(409, 'VISIT_OVERLAP', 'This visit overlaps another recorded visit');
       await this.repository.updateVisit(visitId, { ...input, userId: agentId, companyName: company.company_name, checkInAt, checkOutAt }, connection);
       await this.repository.reopenAfterEdit({ id: timesheetId, status: visit.timesheet_status }, connection);

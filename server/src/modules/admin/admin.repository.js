@@ -57,7 +57,7 @@ export class AdminRepository {
     const [rows] = await connection.execute(`SELECT t.*, u.full_name agent_name, u.email agent_email, u.username agent_username
       FROM timesheets t JOIN users u ON u.id = t.agent_id WHERE t.id = ?${lock ? ' FOR UPDATE' : ''}`, [id]);
     if (!rows[0]) return null;
-    const [visits] = await connection.execute(`SELECT id, company_id, company_name_snapshot, category, contact_person, purpose, visit_notes,
+    const [visits] = await connection.execute(`SELECT id, company_id, company_name_snapshot, category, mdr, contact_person, purpose, visit_notes,
       check_in_at, check_out_at, TIMESTAMPDIFF(MINUTE, check_in_at, check_out_at) duration_minutes
       FROM visits WHERE timesheet_id = ? AND deleted_at IS NULL ORDER BY check_in_at`, [id]);
     const [reviews] = await connection.execute(`SELECT tr.id, tr.decision, tr.comment, tr.created_at, u.full_name reviewer_name
@@ -66,7 +66,7 @@ export class AdminRepository {
   }
 
   async review(id, reviewerId, decision, comment, connection) {
-    await connection.execute('INSERT INTO timesheet_reviews (timesheet_id, reviewer_id, decision, comment) VALUES (?, ?, ?, ?)', [id, reviewerId, decision, comment || null]);
+    await connection.execute('INSERT INTO timesheet_reviews (timesheet_id, reviewer_id, decision, comment, created_at) VALUES (?, ?, ?, ?, UTC_TIMESTAMP(6))', [id, reviewerId, decision, comment || null]);
     await connection.execute('UPDATE timesheets SET status = ?, reviewed_by = ?, reviewed_at = UTC_TIMESTAMP(6), review_comment = ? WHERE id = ?', [decision, reviewerId, comment || null, id]);
   }
 

@@ -45,7 +45,7 @@ export class ImportRepository {
       VALUES (?, ?, ?, ?, ${submitted ? 'UTC_TIMESTAMP(6)' : 'NULL'}, ?, ${approved ? 'UTC_TIMESTAMP(6)' : 'NULL'}, ?)`,
     [group.agentId, group.workDate, group.dailySummary || null, group.status, approved ? actorId : null, approved ? 'Imported and approved by administrator.' : null]);
     const id = Number(result.insertId);
-    if (approved) await connection.execute("INSERT INTO timesheet_reviews (timesheet_id, reviewer_id, decision, comment) VALUES (?, ?, 'APPROVED', ?)", [id, actorId, 'Imported and approved by administrator.']);
+    if (approved) await connection.execute("INSERT INTO timesheet_reviews (timesheet_id, reviewer_id, decision, comment, created_at) VALUES (?, ?, 'APPROVED', ?, UTC_TIMESTAMP(6))", [id, actorId, 'Imported and approved by administrator.']);
     return id;
   }
 

@@ -27,4 +27,22 @@ describe('audit timestamps', () => {
       expect(sql).toContain('UTC_TIMESTAMP(6)');
     }
   });
+
+  it('writes timesheet reviews with an explicit UTC timestamp in AdminRepository and ImportRepository', async () => {
+    const connection = { execute: vi.fn().mockResolvedValue([{ insertId: 1 }]) };
+    await new AdminRepository().review(1, 2, 'APPROVED', 'Looks good', connection);
+    expect(connection.execute).toHaveBeenCalledTimes(2);
+    const [reviewSql] = connection.execute.mock.calls[0];
+    expect(reviewSql).toContain('INSERT INTO timesheet_reviews');
+    expect(reviewSql).toContain('created_at');
+    expect(reviewSql).toContain('UTC_TIMESTAMP(6)');
+
+    const importConnection = { execute: vi.fn().mockResolvedValue([{ insertId: 1 }]) };
+    await new ImportRepository().createTimesheet({ agentId: 1, workDate: '2026-10-20', status: 'APPROVED' }, 2, importConnection);
+    expect(importConnection.execute).toHaveBeenCalledTimes(2);
+    const [, [importReviewSql]] = importConnection.execute.mock.calls;
+    expect(importReviewSql).toContain('INSERT INTO timesheet_reviews');
+    expect(importReviewSql).toContain('created_at');
+    expect(importReviewSql).toContain('UTC_TIMESTAMP(6)');
+  });
 });

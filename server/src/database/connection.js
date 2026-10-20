@@ -17,6 +17,10 @@ export const pool = mysql.createPool({
   ssl: env.DB_SSL ? { minVersion: 'TLSv1.2' } : undefined,
 });
 
+pool.on('connection', (conn) => {
+  conn.query("SET time_zone = '+00:00'");
+});
+
 export async function checkDatabase() {
   const connection = await pool.getConnection();
   try {

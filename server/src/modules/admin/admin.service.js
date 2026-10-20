@@ -51,7 +51,7 @@ export class AdminService {
     return { id: Number(row.id), workDate: dateOnly(row.work_date), status: row.status, dailySummary: row.daily_summary || '', submittedAt: row.submitted_at,
       reviewedAt: row.reviewed_at, reviewComment: row.review_comment || '', agent: { id: Number(row.agent_id), fullName: row.agent_name, email: row.agent_email, username: row.agent_username },
       visits: row.visits.map((visit) => ({ id: Number(visit.id), companyId: Number(visit.company_id), companyName: visit.company_name_snapshot, category: visit.category, contactPerson: visit.contact_person,
-        purpose: visit.purpose, visitNotes: visit.visit_notes, checkInTime: utcToIstTime(visit.check_in_at), checkOutTime: utcToIstTime(visit.check_out_at), duration: duration(visit.duration_minutes) })),
+        purpose: visit.purpose, visitNotes: visit.visit_notes, mdr: visit.mdr || 'Level 1', checkInTime: utcToIstTime(visit.check_in_at), checkOutTime: utcToIstTime(visit.check_out_at), duration: duration(visit.duration_minutes) })),
       reviews: row.reviews.map((review) => ({ id: Number(review.id), decision: review.decision, comment: review.comment || '', reviewerName: review.reviewer_name, createdAt: review.created_at })) };
   }
 
