@@ -6,12 +6,13 @@ A production-minded React, Express and MySQL application for field-agent timeshe
 
 - [Admin User Guide](docs/ADMIN_USER_GUIDE.md)
 - [Agent User Guide](docs/AGENT_USER_GUIDE.md)
+- [Pre-production Test Checklist](docs/PRE_PRODUCTION_TEST_CHECKLIST.md)
 
 Development is intentionally phase-gated so the frontend, backend and database can be tested independently. See [the implementation plan](docs/IMPLEMENTATION_PLAN.md) for current status.
 
 ## Current checkpoint
 
-Phases 1–7 are implemented across the API and React UI. A clean lockfile install, all automated server/client tests, the production client build, and both local MySQL migrations have been verified. Signed-in desktop/mobile walkthroughs for both roles remain pending; browser checks so far cover the public sign-in screen and the mobile viewport.
+Phases 1–7 are implemented across the API and React UI. A clean lockfile install, all automated server/client tests, the production client build, and all five local MySQL migrations have been verified. Signed-in desktop/mobile walkthroughs for both roles remain pending; browser checks so far cover the public sign-in screen and the mobile viewport.
 
 ## Prerequisites
 
@@ -80,7 +81,7 @@ npm run db:migrate
 npm run db:status
 ```
 
-The status command should report both `UP 001_initial_schema.sql` and `UP 002_email_verification_otp.sql`.
+The status command should report migrations `001` through `005` as `UP`.
 
 ## 5. Test each layer
 
@@ -140,13 +141,13 @@ With `DEV_EMAIL_MODE=true`, registration and Admin sign-in write their six-digit
 4. Open Profile and change the password; confirm the app signs you out.
 5. Use Forgot password and follow the new server-log URL.
 
-To create the first Admin, temporarily set the four `ADMIN_*` values in `.env`, then run:
+The first Admin can use the one-time `/admin/register` setup flow. Alternatively, temporarily set the four `ADMIN_*` values in `.env`, then run:
 
 ```bash
 npm run admin:bootstrap
 ```
 
-The command refuses to run if an Admin already exists. Remove the bootstrap password from `.env` immediately afterward. There is no public Admin registration flow; later account administration is restricted to authenticated Admin actions.
+Both setup methods refuse to create an account if an Admin already exists. Remove the bootstrap password from `.env` immediately afterward. The web setup route cannot create a second Admin; ordinary access uses the dedicated Admin sign-in flow.
 
 For real email, set `DEV_EMAIL_MODE=false`, `BREVO_API_KEY`, and a verified `BREVO_SENDER_EMAIL`. Delivery uses Brevo's current transactional endpoint at `POST https://api.brevo.com/v3/smtp/email`; failed delivery is recorded without rolling back a successfully created account or reset request. Automated tests mock provider success and failure responses; live Brevo delivery has not been verified as part of this checkpoint.
 

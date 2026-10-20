@@ -8,6 +8,14 @@ import { signAccessToken } from './token.service.js';
 
 const commonPasswords = new Set(['password1234', '123456789012', 'qwertyuiop12', 'adminpassword', 'letmein123456']);
 const expiresIn = (milliseconds) => new Date(Date.now() + milliseconds);
+const invitedUsername = (fullName, email) => {
+  const stem = normalizeName(fullName).toLowerCase()
+    .replace(/[^\p{L}\p{N}._-]+/gu, '.')
+    .replace(/^[._-]+|[._-]+$/g, '')
+    .slice(0, 35) || 'agent';
+  const suffix = crypto.createHash('sha256').update(email).digest('hex').slice(0, 24);
+  return `${stem}-${suffix}`;
+};
 const publicUser = (user) => ({
   id: Number(user.id), fullName: user.full_name, username: user.username, email: user.email,
   role: user.role, emailVerified: Boolean(user.is_email_verified), status: user.status,
@@ -210,6 +218,32 @@ export class AuthService {
     });
     if (!reset) throw new AppError(400, 'RESET_TOKEN_INVALID', 'This password-reset link is invalid or expired');
     await this.emailService.sendPasswordChanged({ id: reset.user_id, email: reset.email, fullName: reset.full_name });
+  }
+
+  async acceptAgentInvitation(input) {
+    this.validatePassword(input.password);
+    const passwordHash = await this.passwordEngine.hash(input.password, { type: argon2.argon2id });
+    const accepted = await this.repository.transaction(async (connection) => {
+      const invitation = await this.repository.findAgentInvitationByToken(hashToken(input.token), connection);
+      if (!invitation) throw new AppError(400, 'AGENT_INVITATION_INVALID', 'This Agent invitation link is invalid or expired');
+      if (await this.repository.findUserByEmail(invitation.email_normalized, connection)) {
+        throw new AppError(400, 'AGENT_INVITATION_INVALID', 'This Agent invitation link is invalid or expired');
+      }
+      const username = invitedUsername(invitation.full_name, invitation.email_normalized);
+      const userId = await this.repository.createInvitedAgent({
+        fullName: invitation.full_name,
+        username,
+        usernameNormalized: normalizeUsername(username),
+        email: invitation.email,
+        emailNormalized: invitation.email_normalized,
+        passwordHash,
+      }, connection);
+      await this.repository.consumeAgentInvitation(invitation.id, userId, connection);
+      await this.repository.audit({ actorUserId: userId, action: 'AGENT_INVITATION_ACCEPTED', entityType: 'USER', entityId: userId }, connection);
+      return { id: userId, email: invitation.email, fullName: invitation.full_name, role: 'AGENT' };
+    });
+    await this.emailService.sendWelcome(accepted);
+    return { activated: true };
   }
 
   async changePassword(user, currentPassword, password, request = {}) {

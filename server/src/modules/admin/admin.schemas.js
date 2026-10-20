@@ -3,7 +3,7 @@ import { z } from 'zod';
 const envelope = ({ body = z.object({}).strict().default({}), params = z.object({}), query = z.object({}) }) => z.object({ body, params, query });
 const id = z.coerce.number().int().positive();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
-const paging = { page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(100).default(25) };
+const paging = { page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(100).default(10) };
 
 export const adminTimesheetListSchema = envelope({ query: z.object({
   status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED']).optional(),
@@ -30,4 +30,10 @@ export const auditListSchema = envelope({ query: z.object({
   search: z.string().trim().max(100).default(''), action: z.string().trim().max(100).default(''),
   entityType: z.string().trim().max(80).default(''), sortBy: z.enum(['createdAt', 'action', 'entityType', 'actorName']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'), ...paging,
+}) });
+export const sessionListSchema = envelope({ query: z.object({
+  search: z.string().trim().max(100).default(''),
+  role: z.enum(['ADMIN', 'AGENT']).optional(),
+  status: z.enum(['ACTIVE', 'REVOKED', 'EXPIRED']).optional(),
+  ...paging,
 }) });

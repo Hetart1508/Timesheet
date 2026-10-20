@@ -46,6 +46,13 @@ export const templates = {
       html: layout('Reset your password', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Use the button below to choose a new password. This one-time link expires in 30 minutes.</p>`, actionButton('Reset password', url)),
     };
   },
+  agentInvitation({ name, url }) {
+    return {
+      subject: 'Your Timesheet Management account is ready',
+      text: `Hello ${name},\n\nYour Agent account has been prepared. Use this one-time link within 7 days to choose a password and get started:\n${url}`,
+      html: layout('Your Agent account is ready', `<p>Hello ${escapeHtml(name)},</p><p style="line-height:1.7">Your Agent account has been prepared. Use the one-time link below within 7 days to choose a password and get started.</p>`, actionButton('Set up your account', url)),
+    };
+  },
   passwordChanged({ name }) {
     return {
       subject: 'Your Timesheet Management password changed',

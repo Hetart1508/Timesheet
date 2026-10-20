@@ -33,12 +33,12 @@ export const historySchema = envelope({
     startDate: date.optional(), endDate: date.optional(),
     status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED']).optional(),
     page: z.coerce.number().int().positive().default(1),
-    pageSize: z.coerce.number().int().min(1).max(50).default(20),
+    pageSize: z.coerce.number().int().min(1).max(50).default(10),
   }),
 });
 
 export const companyListSchema = envelope({
-  query: z.object({ search: z.string().trim().max(100).default(''), page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(50).default(20) }),
+  query: z.object({ search: z.string().trim().max(100).default(''), page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(50).default(10) }),
 });
 export const createCompanySchema = envelope({
   body: z.object({

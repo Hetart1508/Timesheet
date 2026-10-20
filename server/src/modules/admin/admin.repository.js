@@ -131,4 +131,27 @@ export class AdminRepository {
     const [counts] = await connection.execute(`SELECT COUNT(*) total FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id WHERE ${where.join(' AND ')}`, values);
     return { rows, total: Number(counts[0].total) };
   }
+
+  async listSessions(filters, connection = pool) {
+    const where = ['1=1']; const values = [];
+    if (filters.search) {
+      where.push('(u.full_name LIKE ? OR u.email LIKE ? OR s.ip_address LIKE ? OR s.user_agent LIKE ?)');
+      const search = `%${filters.search}%`;
+      values.push(search, search, search, search);
+    }
+    if (filters.role) { where.push('u.role = ?'); values.push(filters.role); }
+    if (filters.status === 'ACTIVE') where.push('s.revoked_at IS NULL AND s.expires_at > UTC_TIMESTAMP(6)');
+    if (filters.status === 'REVOKED') where.push('s.revoked_at IS NOT NULL');
+    if (filters.status === 'EXPIRED') where.push('s.revoked_at IS NULL AND s.expires_at <= UTC_TIMESTAMP(6)');
+    const offset = (filters.page - 1) * filters.pageSize;
+    const [rows] = await connection.execute(`SELECT s.id, u.id user_id, u.full_name, u.email, u.role,
+      s.ip_address, s.user_agent, s.created_at, s.last_used_at, s.expires_at, s.revoked_at,
+      CASE WHEN s.revoked_at IS NOT NULL THEN 'REVOKED'
+           WHEN s.expires_at <= UTC_TIMESTAMP(6) THEN 'EXPIRED'
+           ELSE 'ACTIVE' END session_status
+      FROM auth_sessions s JOIN users u ON u.id = s.user_id
+      WHERE ${where.join(' AND ')} ORDER BY s.created_at DESC, s.id DESC LIMIT ? OFFSET ?`, [...values, filters.pageSize, offset]);
+    const [counts] = await connection.execute(`SELECT COUNT(*) total FROM auth_sessions s JOIN users u ON u.id = s.user_id WHERE ${where.join(' AND ')}`, values);
+    return { rows, total: Number(counts[0].total) };
+  }
 }

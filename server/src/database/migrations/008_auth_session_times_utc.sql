@@ -1,0 +1,2 @@
+UPDATE auth_sessions
+SET created_at = DATE_SUB(created_at, INTERVAL TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW()) SECOND);

@@ -29,4 +29,18 @@ describe('Brevo email delivery', () => {
     expect(result).toEqual({ delivered: false });
     expect(repository.notifications[0]).toMatchObject({ status: 'FAILED', payload: null });
   });
+
+  it('sends Agent setup links as tracked invitation emails', async () => {
+    const repository = new FakeRepository();
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ messageId: 'invite-id' }) }));
+    const service = new EmailService(repository, fetchMock, config);
+    const result = await service.sendAgentInvitation(
+      { id: 7, fullName: 'Asha Patel', email: 'asha@example.com' },
+      'https://app.example.com/accept-invitation?token=secret',
+    );
+
+    expect(result).toMatchObject({ delivered: true, messageId: 'invite-id' });
+    expect(repository.notifications[0]).toMatchObject({ status: 'SENT', type: 'AGENT_INVITATION', entityType: 'AGENT_INVITATION', entityId: 7 });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).textContent).toContain('https://app.example.com/accept-invitation?token=secret');
+  });
 });

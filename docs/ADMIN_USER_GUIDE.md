@@ -23,7 +23,9 @@ For security, use **Sign out** when you finish, especially on a shared phone or 
 - **Reports:** daily and monthly trends, Agent performance, and company coverage.
 - **Exports:** download filtered CSV or Excel files.
 - **Invoices:** generate an Agent invoice PDF for a month.
+- **Excel import:** import historical timesheet visits or invite Agents from a workbook.
 - **Audit log:** inspect recorded administrative and business actions.
+- **Temporary:** review user sessions, including the server-observed login IP, browser user-agent, and session status.
 - **Account & security:** change the Admin password.
 
 ## Review a timesheet
@@ -105,6 +107,16 @@ In **Invoices**, select an Agent and billing month, then generate a PDF. The inv
 | Bronze | INR 600 |
 
 The invoice is a generated report; download it and follow your organization's separate delivery and accounting process.
+
+### Import Agent invitations
+
+1. Open **Excel import** and select **Invite Agents**.
+2. Download the Agent invitation template. Keep the `Full Name` and `Email` headers and use one row per Agent.
+3. Upload the `.xlsx` workbook and select **Preview and validate**. Existing accounts, prior invitations, duplicate emails, and malformed rows are rejected before sending.
+4. Review the rows, then choose **Import and send setup links**. Each valid Agent receives a one-time link, valid for 7 days, to choose a password. The account is created after the Agent completes setup; usernames are generated automatically.
+5. Review delivery status under **Pending invitations**. Select **Resend link** for an invitation whose email failed or expired; this creates a fresh link and invalidates the previous one.
+
+Invitation records and import actions are retained for auditing. Configure the Brevo sender and API key before sending production invitations.
 
 ## Audit log
 

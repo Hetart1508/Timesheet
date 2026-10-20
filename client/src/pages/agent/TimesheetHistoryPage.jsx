@@ -8,7 +8,7 @@ import { agentApi, formatDuration, formatWorkDate, statusLabels } from '../../ap
 import { errorMessage } from '../../api/client.js';
 import { currentBusinessDate } from '../../utils/business-time.js';
 
-const initialFilters = { startDate: '', endDate: '', status: '', page: 1, pageSize: 20 };
+const initialFilters = { startDate: '', endDate: '', status: '', page: 1, pageSize: 10 };
 
 export default function TimesheetHistoryPage() {
   const today = currentBusinessDate();

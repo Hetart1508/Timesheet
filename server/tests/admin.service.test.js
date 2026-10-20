@@ -71,4 +71,22 @@ describe('Admin review workflow', () => {
     const repo = repository({ setAgentStatus: vi.fn(async () => null) });
     await expect(new AdminService(repo).setAgentStatus(1, 'INACTIVE', { id: 1 })).rejects.toMatchObject({ code: 'AGENT_NOT_FOUND', statusCode: 404 });
   });
+
+  it('maps device session details and identifies IPv4 and IPv6 addresses', async () => {
+    const repo = repository({ listSessions: vi.fn(async () => ({ rows: [
+      { id: 'session-v4', user_id: 4, full_name: 'Asha Patel', email: 'asha@example.com', role: 'AGENT', ip_address: '203.0.113.8', user_agent: 'Browser/1', created_at: 'login', last_used_at: null, expires_at: 'expires', revoked_at: null, session_status: 'ACTIVE' },
+      { id: 'session-v6', user_id: 5, full_name: 'Morgan Lee', email: 'morgan@example.com', role: 'ADMIN', ip_address: '2001:db8::8', user_agent: 'Browser/2', created_at: 'login', last_used_at: 'refresh', expires_at: 'expires', revoked_at: null, session_status: 'ACTIVE' },
+      { id: 'session-mapped', user_id: 6, full_name: 'Taylor Agent', email: 'taylor@example.com', role: 'AGENT', ip_address: '::ffff:192.0.2.7', user_agent: null, created_at: 'login', last_used_at: null, expires_at: 'expires', revoked_at: 'revoked', session_status: 'REVOKED' },
+    ], total: 3 })) });
+
+    const result = await new AdminService(repo).sessions({ search: '', page: 1, pageSize: 10 });
+
+    expect(repo.listSessions).toHaveBeenCalledWith({ search: '', page: 1, pageSize: 10 });
+    expect(result.sessions.map(({ ipVersion, status }) => ({ ipVersion, status }))).toEqual([
+      { ipVersion: 'IPv4', status: 'ACTIVE' },
+      { ipVersion: 'IPv6', status: 'ACTIVE' },
+      { ipVersion: 'IPv4', status: 'REVOKED' },
+    ]);
+    expect(result.pagination).toEqual({ page: 1, pageSize: 10, total: 3 });
+  });
 });

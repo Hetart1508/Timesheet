@@ -10,11 +10,17 @@ describe('FormField', () => {
     const input = screen.getByLabelText('Password');
 
     expect(input).toHaveAttribute('type', 'password');
-    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+    const showButton = screen.getByRole('button', { name: 'Show password' });
+    expect(showButton.querySelector('svg')).toBeInTheDocument();
+    expect(showButton).not.toHaveTextContent('Show');
+    fireEvent.click(showButton);
     expect(input).toHaveAttribute('type', 'text');
     expect(input).toHaveValue('secret passphrase');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hide password' }));
+    const hideButton = screen.getByRole('button', { name: 'Hide password' });
+    expect(hideButton.querySelector('svg')).toBeInTheDocument();
+    expect(hideButton).not.toHaveTextContent('Hide');
+    fireEvent.click(hideButton);
     expect(input).toHaveAttribute('type', 'password');
   });
 

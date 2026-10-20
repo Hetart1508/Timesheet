@@ -9,7 +9,7 @@ import { errorMessage } from '../../api/client.js';
 import { formatBusinessDateTime } from '../../utils/business-time.js';
 
 const json = (value) => value ? JSON.stringify(value, null, 2) : '—';
-const initialFilters = { search: '', action: '', entityType: '', sortBy: 'createdAt', sortOrder: 'desc', page: 1, pageSize: 25 };
+const initialFilters = { search: '', action: '', entityType: '', sortBy: 'createdAt', sortOrder: 'desc', page: 1, pageSize: 10 };
 
 function SortHeader({ field, label, applied, onSort }) {
   const active = applied.sortBy === field;
@@ -64,11 +64,11 @@ export default function AuditLogPage() {
           <SortHeader field="entityType" label="Entity" applied={applied} onSort={changeSort} />
           <th>Details</th>
         </tr></thead><tbody>{result.audits.map((entry) => <tr key={entry.id}>
-          <td><time>{formatBusinessDateTime(entry.createdAt)}</time></td><td><strong>{entry.actorName}</strong></td>
-          <td><strong>{entry.action}</strong></td><td>{entry.entityType}<small>#{entry.entityId}</small></td>
-          <td><details className="audit-row-details"><summary>View changes</summary><div className="audit-detail"><div><strong>Before</strong><pre>{json(entry.before)}</pre></div><div><strong>After</strong><pre>{json(entry.after)}</pre></div>{entry.ipAddress ? <small>Client IP: {entry.ipAddress}</small> : null}</div></details></td>
+          <td data-label="Last active"><time>{formatBusinessDateTime(entry.createdAt)}</time></td><td data-label="Actor"><strong>{entry.actorName}</strong></td>
+          <td data-label="Action"><strong>{entry.action}</strong></td><td data-label="Entity">{entry.entityType}<small>#{entry.entityId}</small></td>
+          <td data-label="Details"><details className="audit-row-details"><summary>View changes</summary><div className="audit-detail"><div><strong>Before</strong><pre>{json(entry.before)}</pre></div><div><strong>After</strong><pre>{json(entry.after)}</pre></div>{entry.ipAddress ? <small>Client IP: {entry.ipAddress}</small> : null}</div></details></td>
         </tr>)}</tbody></table></div> : <div className="empty-state"><ShieldCheck /><h3>No audit records match</h3><p>Adjust your search or filters and try again.</p></div>}
-        <TablePagination page={result.pagination.page} pageSize={result.pagination.pageSize} total={result.pagination.total} label="Audit records" onPageChange={(page) => setApplied((current) => ({ ...current, page }))} onPageSizeChange={(pageSize) => setApplied((current) => ({ ...current, pageSize, page: 1 }))} />
+        <TablePagination page={result.pagination.page} pageSize={result.pagination.pageSize} total={result.pagination.total} label="Audit records" onPageChange={(page) => setApplied((current) => ({ ...current, page }))} />
       </>}
     </section>
   </AppShell>;

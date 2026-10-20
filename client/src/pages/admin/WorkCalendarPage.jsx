@@ -138,7 +138,7 @@ export default function WorkCalendarPage() {
             <th className="work-calendar-agent" scope="row"><span>{agent.fullName}</span><small>{agent.status === 'ACTIVE' ? 'Active' : 'Inactive'}</small></th>
             {days.map(({ date }) => {
               const hours = agent.approvedHoursByDate[date] || 0;
-              return <td key={date}>
+              return <td key={date} data-label={formatBusinessDate(date)} data-value={hours ? `${hours.toFixed(1)} hours` : 'No approved hours'}>
                 <span className={`work-calendar-cell intensity-${intensity(hours)}`} tabIndex={appliedFilters.agentId ? 0 : -1} aria-label={`${agent.fullName}, ${formatBusinessDate(date)}, ${hours ? `${hours.toFixed(1)} approved hours` : 'no approved hours'}`} onMouseEnter={(event) => showCellTooltip(agent, date, event)} onMouseLeave={() => setCellTooltip(null)} onFocus={(event) => showCellTooltip(agent, date, event)} onBlur={() => setCellTooltip(null)} />
               </td>;
             })}

@@ -7,7 +7,7 @@ function pageNumbers(page, pageCount) {
   return [1, 'ellipsis-start', page - 1, page, page + 1, 'ellipsis-end', pageCount];
 }
 
-export default function TablePagination({ page, pageSize, total, onPageChange, onPageSizeChange, label }) {
+export default function TablePagination({ page, pageSize, total, onPageChange, label }) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const firstRecord = total ? (page - 1) * pageSize + 1 : 0;
   const lastRecord = Math.min(page * pageSize, total);
@@ -15,9 +15,7 @@ export default function TablePagination({ page, pageSize, total, onPageChange, o
   return <footer className="table-pagination">
     <span>Showing {firstRecord} to {lastRecord} of {total} entries</span>
     <div className="table-pagination-controls">
-      <label>Rows <select aria-label={`${label} per page`} value={pageSize} onChange={(event) => onPageSizeChange(Number(event.target.value))}>
-        <option value={25}>25</option><option value={50}>50</option><option value={100}>100</option>
-      </select></label>
+      <span>10 per page</span>
       <nav className="table-page-nav" aria-label={`${label} pagination`}>
         <button className="page-button" aria-label="First page" disabled={page <= 1} onClick={() => onPageChange(1)}><ChevronFirst /></button>
         <button className="page-button" aria-label="Previous page" disabled={page <= 1} onClick={() => onPageChange(page - 1)}><ChevronLeft /></button>

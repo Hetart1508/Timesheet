@@ -32,9 +32,9 @@ export class EmailService {
     return response.json();
   }
 
-  async sendTracked({ recipient, type, entityId, template, developmentLink }) {
+  async sendTracked({ recipient, type, entityId, entityType = 'USER', template, developmentLink }) {
     const notificationId = await this.repository.createNotification({
-      recipient, type, entityType: 'USER', entityId, payload: null,
+      recipient, type, entityType, entityId, payload: null,
     });
     try {
       const result = await this.sendProviderMessage(recipient, { ...template, developmentLink });
@@ -74,6 +74,17 @@ export class EmailService {
   sendPasswordReset(user, rawToken) {
     const url = `${this.config.APP_BASE_URL}/reset-password?token=${encodeURIComponent(rawToken)}`;
     return this.sendTracked({ recipient: user.email, type: 'PASSWORD_RESET', entityId: user.id, template: templates.passwordReset({ name: user.fullName, url }), developmentLink: url });
+  }
+
+  sendAgentInvitation(invitation, url) {
+    return this.sendTracked({
+      recipient: invitation.email,
+      type: 'AGENT_INVITATION',
+      entityType: 'AGENT_INVITATION',
+      entityId: invitation.id,
+      template: templates.agentInvitation({ name: invitation.fullName, url }),
+      developmentLink: url,
+    });
   }
 
   sendPasswordChanged(user) {

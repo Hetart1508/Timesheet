@@ -49,5 +49,6 @@ describe('AppShell mobile navigation', () => {
   it('shows the Work calendar in Admin navigation', () => {
     render(<MemoryRouter><AppShell><h1>Workspace</h1></AppShell></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'Work calendar' })).toHaveAttribute('href', '/admin/work-calendar');
+    expect(screen.getByRole('link', { name: 'Temporary' })).toHaveAttribute('href', '/admin/temporary');
   });
 });

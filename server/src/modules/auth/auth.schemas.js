@@ -49,6 +49,14 @@ export const resetPasswordSchema = body({
   path: ['body', 'confirmPassword'],
   message: 'Passwords do not match',
 });
+export const acceptAgentInvitationSchema = body({
+  token: z.string().min(32).max(500),
+  password,
+  confirmPassword: z.string(),
+}).refine(({ body: value }) => value.password === value.confirmPassword, {
+  path: ['body', 'confirmPassword'],
+  message: 'Passwords do not match',
+});
 export const changePasswordSchema = body({
   currentPassword: z.string().min(1).max(128),
   password,

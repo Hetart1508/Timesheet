@@ -1,7 +1,18 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App.jsx';
+
+vi.mock('./context/AuthContext.jsx', () => ({
+  AuthProvider: ({ children }) => children,
+  useAuth: () => ({
+    user: null,
+    loading: false,
+    login: vi.fn(),
+    requestAdminLogin: vi.fn(),
+    verifyAdminLogin: vi.fn(),
+  }),
+}));
 
 afterEach(cleanup);
 

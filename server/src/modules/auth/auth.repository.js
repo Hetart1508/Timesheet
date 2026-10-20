@@ -49,6 +49,27 @@ export class AuthRepository {
     return result.insertId;
   }
 
+  async createInvitedAgent(data, connection) {
+    const [result] = await connection.execute(
+      `INSERT INTO users
+       (full_name, username, username_normalized, email, email_normalized, password_hash, role, is_email_verified, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'AGENT', TRUE, 'ACTIVE')`,
+      [data.fullName, data.username, data.usernameNormalized, data.email, data.emailNormalized, data.passwordHash],
+    );
+    return Number(result.insertId);
+  }
+
+  async findAgentInvitationByToken(tokenHash, connection) {
+    const [rows] = await connection.execute(`SELECT id, full_name, email, email_normalized FROM agent_invitations
+      WHERE token_hash = ? AND status IN ('PENDING', 'SENT') AND expires_at > UTC_TIMESTAMP(6) LIMIT 1 FOR UPDATE`, [tokenHash]);
+    return rows[0] || null;
+  }
+
+  async consumeAgentInvitation(invitationId, userId, connection) {
+    await connection.execute(`UPDATE agent_invitations SET status = 'ACCEPTED', accepted_user_id = ?, accepted_at = UTC_TIMESTAMP(6), token_hash = NULL
+      WHERE id = ? AND status IN ('PENDING', 'SENT') AND expires_at > UTC_TIMESTAMP(6)`, [userId, invitationId]);
+  }
+
   async createUser(data, connection) {
     const [result] = await connection.execute(
       `INSERT INTO users
@@ -152,9 +173,9 @@ export class AuthRepository {
   async createSession(data, connection = pool) {
     await connection.execute(
       `INSERT INTO auth_sessions
-       (id, user_id, refresh_token_hash, expires_at, ip_address, user_agent)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [data.id, data.userId, data.refreshTokenHash, data.expiresAt, data.ipAddress, data.userAgent],
+        (id, user_id, refresh_token_hash, expires_at, created_at, ip_address, user_agent)
+        VALUES (?, ?, ?, ?, UTC_TIMESTAMP(6), ?, ?)`,
+            [data.id, data.userId, data.refreshTokenHash, data.expiresAt, data.ipAddress, data.userAgent],
     );
   }
 

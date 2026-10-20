@@ -5,8 +5,8 @@ import { createCompanyRouter } from '../src/modules/companies/company.routes.js'
 
 const company = { id: 7, companyName: 'Northwind Labs', address: '14 Market Street', status: 'ACTIVE', reviewStatus: 'PENDING' };
 const service = {
-  list: vi.fn(async () => ({ companies: [company], pagination: { page: 1, pageSize: 20, total: 1 } })),
-  listMine: vi.fn(async () => ({ companies: [company], pagination: { page: 1, pageSize: 20, total: 1 } })),
+  list: vi.fn(async (filters) => ({ companies: [company], pagination: { page: filters.page, pageSize: filters.pageSize, total: 1 } })),
+  listMine: vi.fn(async (_id, filters) => ({ companies: [company], pagination: { page: filters.page, pageSize: filters.pageSize, total: 1 } })),
   create: vi.fn(async () => company),
   update: vi.fn(async () => company),
   delete: vi.fn(async () => ({ ...company, status: 'INACTIVE' })),
@@ -26,7 +26,13 @@ describe('Company API', () => {
   it('lets Agents read their company submissions, but not Admin-only company lists', async () => {
     const agentResponse = await request(appFor('AGENT')).get('/api/v1/companies/mine').expect(200);
     expect(agentResponse.body.data.companies).toHaveLength(1);
+    expect(agentResponse.body.data.pagination).toMatchObject({ page: 1, pageSize: 10 });
     await request(appFor('ADMIN')).get('/api/v1/companies/mine').expect(403);
+  });
+
+  it('defaults public company lists to 10 rows', async () => {
+    const response = await request(appFor('AGENT')).get('/api/v1/companies').expect(200);
+    expect(response.body.data.pagination).toMatchObject({ page: 1, pageSize: 10 });
   });
 
   it('supports CSRF-protected create, update, and soft-delete requests', async () => {

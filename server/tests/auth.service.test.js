@@ -71,6 +71,39 @@ describe('registration and verification', () => {
   });
 });
 
+describe('Agent invitation acceptance', () => {
+  it('creates a verified Agent with the chosen password and consumes the link once', async () => {
+    const rawToken = 'one-time-agent-invitation-token-with-enough-entropy';
+    repository.agentInvitations.set(1, {
+      id: 1, full_name: 'Asha Patel', email: 'asha@example.com', email_normalized: 'asha@example.com',
+      tokenHash: hashToken(rawToken), expiresAt: new Date(Date.now() + 60_000), status: 'SENT',
+    });
+
+    await expect(service.acceptAgentInvitation({ token: rawToken, password: 'a strong onboarding passphrase' }))
+      .resolves.toEqual({ activated: true });
+
+    expect(repository.users[0]).toMatchObject({
+      full_name: 'Asha Patel', email: 'asha@example.com', role: 'AGENT', is_email_verified: true,
+      password_hash: 'hash:a strong onboarding passphrase',
+    });
+    expect(repository.users[0].username).toMatch(/^asha\.patel-[a-f0-9]{24}$/);
+    expect(repository.agentInvitations.get(1)).toMatchObject({ status: 'ACCEPTED', acceptedUserId: 1, tokenHash: null });
+    expect(email.sent.at(-1).type).toBe('welcome');
+    await expect(service.acceptAgentInvitation({ token: rawToken, password: 'another strong passphrase' }))
+      .rejects.toMatchObject({ code: 'AGENT_INVITATION_INVALID' });
+  });
+
+  it('rejects expired or unknown invitation links', async () => {
+    const rawToken = 'expired-agent-invitation-token-with-enough-entropy';
+    repository.agentInvitations.set(1, {
+      id: 1, full_name: 'Asha Patel', email: 'asha@example.com', email_normalized: 'asha@example.com',
+      tokenHash: hashToken(rawToken), expiresAt: new Date(0), status: 'SENT',
+    });
+    await expect(service.acceptAgentInvitation({ token: rawToken, password: 'a strong onboarding passphrase' }))
+      .rejects.toMatchObject({ code: 'AGENT_INVITATION_INVALID' });
+  });
+});
+
 describe('login and sessions', () => {
   it('logs an Agent in using a verified email and password', async () => {
     verifiedAgent(repository);

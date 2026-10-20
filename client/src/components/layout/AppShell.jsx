@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BarChart3, Building2, CalendarDays, CalendarRange, Clock3, Download, FileCheck2, FileText, History, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import { BarChart3, Building2, CalendarDays, CalendarRange, Clock3, Download, FileCheck2, FileInput, FileText, History, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 import { LazyMotion, domAnimation, m as motion, useReducedMotion } from 'motion/react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -13,7 +13,8 @@ const adminLinks = [
   ['/admin/timesheets', 'Timesheets', CalendarDays], ['/admin/work-calendar', 'Work calendar', CalendarRange], ['/admin/agents', 'Agents', Users],
   ['/admin/companies', 'Companies', Building2], ['/admin/analytics', 'Reports', BarChart3],
   ['/admin/exports', 'Exports', Download], ['/admin/invoices', 'Invoices', FileText],
-  ['/admin/audits', 'Audit log', ShieldCheck], ['/profile', 'Account & security', UserRound],
+  ['/admin/imports', 'Excel import', FileInput],
+  ['/admin/audits', 'Audit log', ShieldCheck], ['/admin/temporary', 'Temporary', ShieldCheck], ['/profile', 'Account & security', UserRound],
 ];
 
 export default function AppShell({ children }) {

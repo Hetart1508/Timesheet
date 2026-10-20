@@ -7,6 +7,7 @@ import { pool } from '../src/database/connection.js';
 const service = {
   register: vi.fn(async () => ({ delivery: 'SENT' })),
   registerAdmin: vi.fn(async () => ({ delivery: 'SENT' })),
+  acceptAgentInvitation: vi.fn(async () => ({ activated: true })),
   login: vi.fn(async () => ({
     user: { id: 1, role: 'AGENT' }, accessToken: 'access-token', refreshToken: 'refresh-token', csrfToken: 'csrf-token',
   })),
@@ -41,6 +42,20 @@ describe('auth API contracts', () => {
       password: 'correct horse battery', confirmPassword: 'correct horse battery',
     }).expect(201);
     expect(service.registerAdmin).toHaveBeenCalledWith(expect.objectContaining({ email: 'admin@example.com' }), expect.any(Object));
+  });
+
+  it('accepts a one-time Agent setup link and validates password confirmation', async () => {
+    await request(app).post('/api/v1/auth/accept-invitation').send({
+      token: 'valid-agent-invitation-token-with-enough-entropy',
+      password: 'a strong onboarding passphrase', confirmPassword: 'a strong onboarding passphrase',
+    }).expect(200);
+    expect(service.acceptAgentInvitation).toHaveBeenCalledWith(expect.objectContaining({ token: expect.any(String) }));
+
+    await request(app).post('/api/v1/auth/accept-invitation').send({
+      token: 'valid-agent-invitation-token-with-enough-entropy',
+      password: 'a strong onboarding passphrase', confirmPassword: 'different strong passphrase',
+    }).expect(422);
+    expect(service.acceptAgentInvitation).toHaveBeenCalledTimes(1);
   });
 
   it('creates an Admin session only after the email code is verified', async () => {

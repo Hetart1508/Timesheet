@@ -32,7 +32,11 @@ const mapExport = (row) => ({
 
 export class ReportService {
   constructor(repository) { this.repository = repository; }
-  validateRange(filters) { if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) throw new AppError(422, 'INVALID_DATE_RANGE', 'Start date must not be after end date'); }
+  validateRange(filters) {
+    const today = currentBusinessDate();
+    if ((filters.startDate && filters.startDate > today) || (filters.endDate && filters.endDate > today)) throw new AppError(422, 'FUTURE_DATE_NOT_ALLOWED', 'Report dates cannot be in the future');
+    if (filters.startDate && filters.endDate && filters.startDate > filters.endDate) throw new AppError(422, 'INVALID_DATE_RANGE', 'Start date must not be after end date');
+  }
 
   async analytics(filters) {
     this.validateRange(filters); const data = await this.repository.analytics(filters);

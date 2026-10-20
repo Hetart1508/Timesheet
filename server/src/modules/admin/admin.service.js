@@ -103,4 +103,25 @@ export class AdminService {
     return { audits: result.rows.map((row) => ({ id: Number(row.id), actorName: row.actor_name || 'System', action: row.action, entityType: row.entity_type, entityId: row.entity_id,
       before: row.before_data, after: row.after_data, ipAddress: row.ip_address, createdAt: row.created_at })), pagination: { page: filters.page, pageSize: filters.pageSize, total: result.total } };
   }
+
+  async sessions(filters) {
+    const result = await this.repository.listSessions(filters);
+    return {
+      sessions: result.rows.map((row) => ({
+        id: row.id,
+        userId: Number(row.user_id),
+        fullName: row.full_name,
+        email: row.email,
+        role: row.role,
+        ipAddress: row.ip_address,
+        ipVersion: row.ip_address ? (row.ip_address.includes(':') && !row.ip_address.startsWith('::ffff:') ? 'IPv6' : 'IPv4') : null,
+        userAgent: row.user_agent,
+        loginAt: row.created_at,
+        lastUsedAt: row.last_used_at,
+        expiresAt: row.expires_at,
+        status: row.session_status,
+      })),
+      pagination: { page: filters.page, pageSize: filters.pageSize, total: result.total },
+    };
+  }
 }

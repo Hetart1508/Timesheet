@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { TimesheetService } from '../src/modules/timesheets/timesheet.service.js';
-import { visitSchema } from '../src/modules/timesheets/timesheet.schemas.js';
+import { companyListSchema, historySchema, visitSchema } from '../src/modules/timesheets/timesheet.schemas.js';
 
 function makeRepository(overrides = {}) {
   return {
@@ -31,6 +31,11 @@ const visit = {
 };
 
 describe('Agent timesheet business rules', () => {
+  it('defaults timesheet and company lists to 10 rows per page', () => {
+    expect(historySchema.parse({ body: {}, params: {}, query: {} }).query).toMatchObject({ page: 1, pageSize: 10 });
+    expect(companyListSchema.parse({ body: {}, params: {}, query: {} }).query).toMatchObject({ page: 1, pageSize: 10 });
+  });
+
   it('accepts only Gold, Silver, or Bronze visit categories', () => {
     for (const category of ['Gold', 'Silver', 'Bronze']) {
       expect(visitSchema.shape.body.safeParse({ ...visit, category }).success).toBe(true);

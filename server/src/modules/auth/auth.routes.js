@@ -9,7 +9,7 @@ import { validate } from '../../middleware/validate.js';
 import { asyncHandler } from '../../utils/async-handler.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 import {
-  adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema, loginSchema, registrationSchema,
+  acceptAgentInvitationSchema, adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema, loginSchema, registrationSchema,
   resetPasswordSchema, verifyOtpSchema,
 } from './auth.schemas.js';
 
@@ -44,6 +44,11 @@ export function createAuthRouter(options = {}) {
   router.post('/register-admin', publicLimiter, validate(adminRegistrationSchema), asyncHandler(async (req, res) => {
     const result = await service.registerAdmin(req.validated.body, { ip: req.ip });
     res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Admin account created. Check the Admin email for the verification code.' : 'Admin account created, but the verification email could not be delivered. Use resend verification.' });
+  }));
+
+  router.post('/accept-invitation', publicLimiter, validate(acceptAgentInvitationSchema), asyncHandler(async (req, res) => {
+    const result = await service.acceptAgentInvitation(req.validated.body);
+    res.json({ success: true, data: result, message: 'Agent account set up successfully. You can now sign in.' });
   }));
 
   router.post('/verify-email', publicLimiter, validate(verifyOtpSchema), asyncHandler(async (req, res) => {

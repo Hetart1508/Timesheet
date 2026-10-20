@@ -9,6 +9,7 @@ export class FakeRepository {
     this.verificationTokens = new Map();
     this.adminLoginChallenges = new Map();
     this.resetTokens = new Map();
+    this.agentInvitations = new Map();
     this.sessions = new Map();
     this.notifications = [];
     this.audits = [];
@@ -24,6 +25,7 @@ export class FakeRepository {
   }
 
   createAgent(data) { return this.createUser({ ...data, role: 'AGENT', emailVerified: false }); }
+  createInvitedAgent(data) { return this.createUser({ ...data, role: 'AGENT', emailVerified: true }); }
   createUser(data) {
     if (this.users.some((user) => user.username_normalized === data.usernameNormalized || user.email_normalized === data.emailNormalized)) {
       const error = new Error('Duplicate'); error.code = 'ER_DUP_ENTRY'; throw error;
@@ -38,6 +40,14 @@ export class FakeRepository {
   }
 
   countAdmins() { return this.users.filter((user) => user.role === 'ADMIN').length; }
+  findAgentInvitationByToken(tokenHash) {
+    const invitation = [...this.agentInvitations.values()].find((item) => item.tokenHash === tokenHash);
+    return invitation && invitation.status !== 'ACCEPTED' && invitation.expiresAt > new Date() ? invitation : null;
+  }
+  consumeAgentInvitation(id, userId) {
+    const invitation = this.agentInvitations.get(Number(id));
+    invitation.status = 'ACCEPTED'; invitation.acceptedUserId = userId; invitation.tokenHash = null;
+  }
   replaceVerificationToken(userId, tokenHash, expiresAt) {
     for (const [key, token] of this.verificationTokens) if (token.userId === userId && !token.consumed) this.verificationTokens.delete(key);
     this.verificationTokens.set(tokenHash, { userId, expiresAt, consumed: false, attempts: 0 });

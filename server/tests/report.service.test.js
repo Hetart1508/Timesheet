@@ -36,6 +36,12 @@ describe('secure spreadsheet exports', () => {
     await expect(new ReportService(repository).analytics({ startDate: '2026-10-18', endDate: '2026-10-17' })).rejects.toMatchObject({ code: 'INVALID_DATE_RANGE' });
     expect(repository.analytics).not.toHaveBeenCalled();
   });
+
+  it('rejects future analytics dates before querying', async () => {
+    const repository = { analytics: vi.fn() };
+    await expect(new ReportService(repository).analytics({ endDate: '9999-12-31' })).rejects.toMatchObject({ code: 'FUTURE_DATE_NOT_ALLOWED' });
+    expect(repository.analytics).not.toHaveBeenCalled();
+  });
 });
 
 describe('monthly Agent invoices', () => {

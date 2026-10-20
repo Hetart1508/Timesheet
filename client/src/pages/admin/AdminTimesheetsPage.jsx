@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowDownUp, ArrowUp, Eye, FileText, Search, SlidersHorizontal } from 'lucide-react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell.jsx';
 import Alert from '../../components/common/Alert.jsx';
 import RequestState from '../../components/common/RequestState.jsx';
 import StatusBadge from '../../components/common/StatusBadge.jsx';
 import TablePagination from '../../components/common/TablePagination.jsx';
+import FormattedDateField from '../../components/forms/FormattedDateField.jsx';
 import useDebouncedValue from '../../hooks/useDebouncedValue.js';
 import { adminApi } from '../../api/admin.js';
 import { errorMessage } from '../../api/client.js';
 import { formatDuration, formatWorkDate, statusLabels } from '../../api/timesheets.js';
 import { currentBusinessDate } from '../../utils/business-time.js';
+import TimesheetReviewModal from './TimesheetReviewModal.jsx';
 
-const initialFilters = { status: '', startDate: '', endDate: '', agentId: '', search: '', sortBy: 'workDate', sortOrder: 'desc', page: 1, pageSize: 25 };
+const initialFilters = { status: '', startDate: '', endDate: '', agentId: '', search: '', sortBy: 'workDate', sortOrder: 'desc', page: 1, pageSize: 10 };
 const clearFiltersOnReturnKey = 'timesheet.clearFiltersOnReturn';
 
 function SortHeader({ field, label, applied, onSort }) {
@@ -36,9 +38,18 @@ export default function AdminTimesheetsPage({ defaultStatus = '' }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [agentError, setAgentError] = useState('');
+  const [previewId, setPreviewId] = useState(null);
+  const requestIdRef = useRef(0);
   const debouncedSearch = useDebouncedValue(filters.search, 500);
   const loadAgents = () => { setAgentError(''); return adminApi.listAgents({ pageSize: 100 }).then((value) => setAgents(value.agents)).catch((err) => setAgentError(errorMessage(err))); };
-  const load = () => { setResult(null); setLoadError(''); return adminApi.listTimesheets(Object.fromEntries(Object.entries(applied).filter(([, value]) => value !== ''))).then(setResult).catch((err) => setLoadError(errorMessage(err))); };
+  const load = () => {
+    const requestId = ++requestIdRef.current;
+    setResult(null);
+    setLoadError('');
+    return adminApi.listTimesheets(Object.fromEntries(Object.entries(applied).filter(([, value]) => value !== '')))
+      .then((value) => { if (requestId === requestIdRef.current) setResult(value); })
+      .catch((err) => { if (requestId === requestIdRef.current) setLoadError(errorMessage(err)); });
+  };
   useEffect(() => {
     if (!clearFiltersOnReturn) return;
     window.sessionStorage.removeItem(clearFiltersOnReturnKey);
@@ -48,9 +59,12 @@ export default function AdminTimesheetsPage({ defaultStatus = '' }) {
   useEffect(() => { load(); }, [applied]);
   useEffect(() => { setApplied((current) => current.search === debouncedSearch ? current : { ...current, search: debouncedSearch, page: 1 }); }, [debouncedSearch]);
   const activeFilterCount = [applied.agentId, applied.status, applied.startDate, applied.endDate].filter(Boolean).length;
-  const applyFilters = (event) => {
-    event.preventDefault();
-    setApplied((current) => ({ ...current, agentId: filters.agentId, status: filters.status, startDate: filters.startDate, endDate: filters.endDate, page: 1 }));
+  const updateFilter = (field, value) => {
+    const changes = { [field]: value };
+    if (field === 'startDate' && value && filters.endDate && value > filters.endDate) changes.endDate = '';
+    if (field === 'endDate' && value && filters.startDate && value < filters.startDate) changes.startDate = '';
+    setFilters((current) => ({ ...current, ...changes }));
+    setApplied((current) => ({ ...current, ...changes, page: 1 }));
   };
   const clearFilters = () => {
     const cleared = { agentId: '', status: '', startDate: '', endDate: '' };
@@ -72,13 +86,13 @@ export default function AdminTimesheetsPage({ defaultStatus = '' }) {
           <button className={`filter-toggle${filtersOpen ? ' active' : ''}`} type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={16} /> Filters{activeFilterCount ? <span>{activeFilterCount}</span> : null}</button>
         </div>
       </div>
-      {filtersOpen ? <form className="admin-filter-panel" onSubmit={applyFilters}>
-        <label><span>Agent</span><select value={filters.agentId} onChange={(e) => setFilters({ ...filters, agentId: e.target.value })}><option value="">All agents</option>{agents.map((agent) => <option value={agent.id} key={agent.id}>{agent.fullName}</option>)}</select></label>
-        <label><span>Status</span><select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-        <label><span>From</span><input type="date" max={today} value={filters.startDate} onChange={(e) => setFilters({ ...filters, startDate: e.target.value })} /></label>
-        <label><span>To</span><input type="date" max={today} value={filters.endDate} onChange={(e) => setFilters({ ...filters, endDate: e.target.value })} /></label>
-        <div className="admin-filter-actions"><button className="secondary-button" type="submit">Apply filters</button>{activeFilterCount ? <button className="text-action" type="button" onClick={clearFilters}>Clear filters</button> : null}</div>
-      </form>
+      {filtersOpen ? <div className="admin-filter-panel">
+        <label><span>Agent</span><select value={filters.agentId} onChange={(e) => updateFilter('agentId', e.target.value)}><option value="">All agents</option>{agents.map((agent) => <option value={agent.id} key={agent.id}>{agent.fullName}</option>)}</select></label>
+        <label><span>Status</span><select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}><option value="">All statuses</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+        <FormattedDateField label="From" max={today} value={filters.startDate} onChange={(e) => updateFilter('startDate', e.target.value)} />
+        <FormattedDateField label="To" max={today} value={filters.endDate} onChange={(e) => updateFilter('endDate', e.target.value)} />
+        {activeFilterCount ? <div className="admin-filter-actions"><button className="text-action" type="button" onClick={clearFilters}>Clear filters</button></div> : null}
+      </div>
       : null}
       <Alert>{agentError ? <>Could not load Agent filters. <button className="text-action" type="button" onClick={loadAgents}>Retry</button></> : null}</Alert>
       {!result ? <RequestState error={loadError} label="Loading timesheets…" onRetry={load} /> : <>
@@ -90,12 +104,13 @@ export default function AdminTimesheetsPage({ defaultStatus = '' }) {
           <SortHeader field="status" label="Status" applied={applied} onSort={changeSort} />
           <th>Reviewer</th><th>Actions</th>
         </tr></thead><tbody>{result.timesheets.map((sheet) => <tr key={sheet.id}>
-          <td><strong>{sheet.agentName}</strong><small>{sheet.agentEmail}</small></td><td>{formatWorkDate(sheet.workDate)}</td>
-          <td>{sheet.visitCount}</td><td>{formatDuration(sheet.duration)}</td><td><StatusBadge status={sheet.status} /></td>
-          <td>{sheet.reviewerName || '—'}</td><td><Link className="table-action" to={`/admin/timesheets/${sheet.id}`} state={{ clearFiltersOnReturn: true }}><Eye size={15} /> Inspect</Link></td>
+          <td data-label="Agent"><strong>{sheet.agentName}</strong><small>{sheet.agentEmail}</small></td><td data-label="Work date">{formatWorkDate(sheet.workDate)}</td>
+          <td data-label="Visits">{sheet.visitCount}</td><td data-label="Duration">{formatDuration(sheet.duration)}</td><td data-label="Status"><StatusBadge status={sheet.status} /></td>
+          <td data-label="Reviewer">{sheet.reviewerName || '—'}</td><td data-label="Actions"><button className="table-action" type="button" onClick={() => setPreviewId(sheet.id)}><Eye size={15} /> Inspect</button></td>
         </tr>)}</tbody></table></div> : <div className="empty-state"><FileText /><h3>No timesheets match</h3><p>Adjust your search or filters and try again.</p></div>}
-        <TablePagination page={result.pagination.page} pageSize={result.pagination.pageSize} total={result.pagination.total} label="Timesheets" onPageChange={(page) => setApplied((current) => ({ ...current, page }))} onPageSizeChange={(pageSize) => setApplied((current) => ({ ...current, pageSize, page: 1 }))} />
+        <TablePagination page={result.pagination.page} pageSize={result.pagination.pageSize} total={result.pagination.total} label="Timesheets" onPageChange={(page) => setApplied((current) => ({ ...current, page }))} />
       </>}
     </section>
+    {previewId ? <TimesheetReviewModal id={previewId} onClose={() => setPreviewId(null)} onReviewed={load} /> : null}
   </AppShell>;
 }
