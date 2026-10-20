@@ -29,7 +29,7 @@ export class ReportRepository {
       COUNT(v.id) visit_count, COUNT(DISTINCT v.company_id) companies_covered,
       COALESCE(SUM(TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at)), 0) duration_minutes
       FROM users u LEFT JOIN timesheets t ON t.agent_id = u.id ${scope.sql ? `AND ${scope.sql.slice(6)}` : ''}
-      LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL WHERE u.role = 'AGENT'
+      LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL WHERE u.role IN ('ADMIN', 'AGENT')
       GROUP BY u.id ORDER BY duration_minutes DESC, u.full_name`, scope.values);
     const [companies] = await connection.execute(`SELECT c.id company_id, c.company_name, c.contact_person,
       COUNT(v.id) visit_count, COUNT(DISTINCT t.agent_id) agents_count,

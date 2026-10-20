@@ -6,7 +6,7 @@ This guide explains how to use the Agent side of the Timesheet Portal to record 
 
 ## Sign in and account setup
 
-Open the Agent sign-in page at `/login/agent` (the older `/login` address redirects there).
+Open `/login`, then choose **Agent sign in**. The direct `/login/agent` address also remains available for bookmarks.
 
 ### First-time registration
 

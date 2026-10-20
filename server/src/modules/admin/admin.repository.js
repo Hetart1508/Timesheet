@@ -5,7 +5,7 @@ export class AdminRepository {
 
   async dashboard(workDate, connection = pool) {
     const [[agents], [activity], [visits], [pending], [queue]] = await Promise.all([
-      connection.execute("SELECT COUNT(*) total FROM users WHERE role = 'AGENT' AND status = 'ACTIVE'"),
+      connection.execute("SELECT COUNT(*) total FROM users WHERE role IN ('ADMIN', 'AGENT') AND status = 'ACTIVE'"),
       connection.execute('SELECT COUNT(DISTINCT agent_id) total FROM timesheets WHERE work_date = ?', [workDate]),
       connection.execute('SELECT COUNT(*) visits, COALESCE(SUM(TIMESTAMPDIFF(MINUTE, check_in_at, check_out_at)), 0) minutes FROM visits WHERE deleted_at IS NULL'),
       connection.execute("SELECT COUNT(*) total FROM timesheets WHERE status = 'SUBMITTED'"),
@@ -47,7 +47,7 @@ export class AdminRepository {
       FROM users u
       LEFT JOIN timesheets t ON t.agent_id = u.id AND t.status = 'APPROVED' AND t.work_date BETWEEN ? AND ?
       LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL
-      WHERE u.role = 'AGENT' ${agentFilter}
+      WHERE u.role IN ('ADMIN', 'AGENT') ${agentFilter}
       GROUP BY u.id, u.full_name, u.status, t.work_date
       ORDER BY u.full_name, t.work_date`, values);
     return rows;
@@ -71,11 +71,11 @@ export class AdminRepository {
   }
 
   async listAgents(filters, connection = pool) {
-    const where = ["u.role = 'AGENT'"]; const values = [];
+    const where = ["u.role IN ('ADMIN', 'AGENT')"]; const values = [];
     if (filters.search) { where.push('(u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)'); const q = `%${filters.search}%`; values.push(q, q, q); }
     if (filters.status) { where.push('u.status = ?'); values.push(filters.status); }
     const offset = (filters.page - 1) * filters.pageSize;
-    const [rows] = await connection.execute(`SELECT u.id, u.full_name, u.username, u.email, u.status, u.is_email_verified, u.created_at,
+    const [rows] = await connection.execute(`SELECT u.id, u.full_name, u.username, u.email, u.role account_role, u.status, u.is_email_verified, u.created_at,
       COUNT(DISTINCT t.id) total_timesheets, COUNT(v.id) total_visits,
       COALESCE(SUM(TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at)), 0) total_minutes
       FROM users u LEFT JOIN timesheets t ON t.agent_id = u.id LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL

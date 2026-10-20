@@ -36,6 +36,10 @@ export const adminLoginVerifySchema = body({
   otp: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code'),
 });
 
+export const workspaceSchema = body({
+  role: z.enum(['ADMIN', 'AGENT']),
+});
+
 export const verifyOtpSchema = body({
   email: z.string().trim().email().max(254),
   otp: z.string().regex(/^\d{6}$/, 'Enter the six-digit verification code'),

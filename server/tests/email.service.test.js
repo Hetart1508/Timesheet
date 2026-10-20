@@ -43,4 +43,14 @@ describe('Brevo email delivery', () => {
     expect(repository.notifications[0]).toMatchObject({ status: 'SENT', type: 'AGENT_INVITATION', entityType: 'AGENT_INVITATION', entityId: 7 });
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).textContent).toContain('https://app.example.com/accept-invitation?token=secret');
   });
+
+  it('keeps Admin password reset links within the Admin portal', async () => {
+    const repository = new FakeRepository();
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ messageId: 'reset-id' }) }));
+    const service = new EmailService(repository, fetchMock, config);
+    await service.sendPasswordReset({ id: 1, email: 'admin@example.com', fullName: 'Admin User', role: 'ADMIN' }, 'raw-token');
+
+    const text = JSON.parse(fetchMock.mock.calls[0][1].body).textContent;
+    expect(text).toContain('/reset-password?token=raw-token&portal=admin');
+  });
 });

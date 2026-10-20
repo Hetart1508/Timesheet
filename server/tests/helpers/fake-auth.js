@@ -21,7 +21,10 @@ export class FakeRepository {
   findUserById(id) { return this.users.find((user) => user.id === Number(id)) || null; }
   findAuthenticatedUser(userId, sessionId) {
     const session = this.sessions.get(sessionId);
-    return session && !session.revoked_at && session.userId === Number(userId) ? this.findUserById(userId) : null;
+    const user = this.findUserById(userId);
+    return session && !session.revoked_at && session.userId === Number(userId)
+      ? { ...user, account_role: user.role, role: session.activeRole }
+      : null;
   }
 
   createAgent(data) { return this.createUser({ ...data, role: 'AGENT', emailVerified: false }); }
@@ -95,7 +98,7 @@ export class FakeRepository {
     return { user_id: user.id, email: user.email, full_name: user.full_name };
   }
 
-  createSession(data) { this.sessions.set(data.id, { ...data, refresh_token_hash: data.refreshTokenHash, previous_token_hash: null, revoked_at: null }); }
+  createSession(data) { this.sessions.set(data.id, { ...data, activeRole: data.activeRole, refresh_token_hash: data.refreshTokenHash, previous_token_hash: null, revoked_at: null }); }
   rotateSession(currentHash, nextHash) {
     const session = [...this.sessions.values()].find((item) => item.refresh_token_hash === currentHash || item.previous_token_hash === currentHash);
     if (!session) return null;
@@ -104,7 +107,14 @@ export class FakeRepository {
     session.previous_token_hash = session.refresh_token_hash;
     session.refresh_token_hash = nextHash;
     const user = this.findUserById(session.userId);
-    return { ...user, id: user.id, user_id: user.id, session_id: session.id };
+    return { ...user, id: user.id, user_id: user.id, session_id: session.id, account_role: user.role, role: session.activeRole };
+  }
+  switchWorkspace(userId, sessionId, role) {
+    const session = this.sessions.get(sessionId);
+    const user = this.findUserById(userId);
+    if (!session || session.revoked_at || session.userId !== Number(userId) || (role === 'ADMIN' && user?.role !== 'ADMIN')) return false;
+    session.activeRole = role;
+    return true;
   }
   revokeSessionByToken(hash) { for (const session of this.sessions.values()) if (session.refresh_token_hash === hash) session.revoked_at = new Date(); }
   revokeAllSessions(userId) { for (const session of this.sessions.values()) if (session.userId === Number(userId)) session.revoked_at = new Date(); }

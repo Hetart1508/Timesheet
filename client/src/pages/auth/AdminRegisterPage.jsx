@@ -51,7 +51,7 @@ export default function AdminRegisterPage() {
     finally { setSubmitting(false); }
   };
 
-  return <AuthShell eyebrow="One-time Admin setup" title={step === 'details' ? 'Create the Admin account' : step === 'verify' ? 'Verify the Admin email' : 'Admin account ready'} description={step === 'details' ? 'Only one Admin account can be created for this system.' : step === 'verify' ? `Enter the six-digit code sent to ${form.email}.` : 'Every Admin login will require a new email security code.'} footer={<>Already set up? <Link to="/login/admin">Admin sign in</Link> · <Link to="/login/agent">Agent sign in</Link></>}>
+  return <AuthShell brandTo="/login/admin" eyebrow="One-time Admin setup" title={step === 'details' ? 'Create the Admin account' : step === 'verify' ? 'Verify the Admin email' : 'Admin account ready'} description={step === 'details' ? 'Only one Admin account can be created for this system.' : step === 'verify' ? `Enter the six-digit code sent to ${form.email}.` : 'Every Admin login will require a new email security code.'} footer={<>Already set up? <Link to="/login/admin">Admin sign in</Link></>}>
     <Alert>{error}</Alert>
     {step === 'details' ? <form className="auth-form" onSubmit={register}>
       <div className="two-fields"><FormField label="Full name" name="fullName" autoComplete="name" required minLength="2" maxLength="120" error={fieldErrors.fullName} value={form.fullName} onChange={update} /><FormField label="Username" name="username" autoComplete="username" required minLength="3" maxLength="60" error={fieldErrors.username} value={form.username} onChange={update} /></div>

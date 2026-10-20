@@ -26,7 +26,7 @@ export default function LoginPage() {
     }
     finally { setSubmitting(false); }
   };
-  return <AuthShell eyebrow="Agent portal" title="Agent sign in" description="Use your verified Agent email and password." footer={<span>New Agent? <Link to="/register">Create an account</Link></span>}>
+  return <AuthShell compact brandTo="/login" eyebrow="Agent portal" title="Agent sign in" description="Use your verified Agent email and password." footer={<span>New Agent? <Link to="/register">Create an account</Link></span>}>
     <form className="auth-form" onSubmit={submit}><Alert>{error}</Alert>
       <FormField label="Agent email" name="email" type="email" autoComplete="username" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
       <FormField label="Password" name="password" type="password" autoComplete="current-password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />

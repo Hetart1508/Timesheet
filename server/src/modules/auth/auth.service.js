@@ -18,7 +18,9 @@ const invitedUsername = (fullName, email) => {
 };
 const publicUser = (user) => ({
   id: Number(user.id), fullName: user.full_name, username: user.username, email: user.email,
-  role: user.role, emailVerified: Boolean(user.is_email_verified), status: user.status,
+  role: user.role, accountRole: user.account_role || user.role,
+  roles: (user.account_role || user.role) === 'ADMIN' ? ['ADMIN', 'AGENT'] : ['AGENT'],
+  emailVerified: Boolean(user.is_email_verified), status: user.status,
 });
 
 export class AuthService {
@@ -122,6 +124,7 @@ export class AuthService {
     const refreshToken = randomToken(48);
     await this.repository.createSession({
       id: sessionId, userId: user.id, refreshTokenHash: hashToken(refreshToken),
+      activeRole: 'AGENT',
       expiresAt: expiresIn(env.REFRESH_TOKEN_TTL_DAYS * 86_400_000),
       ipAddress: request.ip, userAgent: request.userAgent?.slice(0, 255),
     });
@@ -164,6 +167,7 @@ export class AuthService {
       if (!admin || admin.invalid) throw new AppError(400, 'ADMIN_OTP_INVALID', 'The security code is invalid or expired');
       await this.repository.createSession({
         id: sessionId, userId: admin.user_id, refreshTokenHash: hashToken(refreshToken),
+        activeRole: 'ADMIN',
         expiresAt: expiresIn(env.REFRESH_TOKEN_TTL_DAYS * 86_400_000),
         ipAddress: request.ip, userAgent: request.userAgent?.slice(0, 255),
       }, connection);
@@ -196,6 +200,22 @@ export class AuthService {
 
   async logout(rawRefreshToken) {
     if (rawRefreshToken) await this.repository.revokeSessionByToken(hashToken(rawRefreshToken));
+  }
+
+  async switchWorkspace(user, sessionId, role, request = {}) {
+    const accountRole = user.accountRole || user.role;
+    if (role === 'ADMIN' && accountRole !== 'ADMIN') {
+      throw new AppError(403, 'FORBIDDEN', 'You do not have access to the Admin workspace');
+    }
+    await this.repository.transaction(async (connection) => {
+      const switched = await this.repository.switchWorkspace(user.id, sessionId, role, connection);
+      if (!switched) throw new AppError(401, 'AUTHENTICATION_REQUIRED', 'Authentication is required');
+      await this.repository.audit({
+        actorUserId: user.id, action: 'WORKSPACE_SWITCHED', entityType: 'AUTH_SESSION',
+        entityId: sessionId, before: { role: user.role }, after: { role }, ipAddress: request.ip,
+      }, connection);
+    });
+    return { ...user, role, accountRole, roles: accountRole === 'ADMIN' ? ['ADMIN', 'AGENT'] : ['AGENT'] };
   }
 
   async forgotPassword(email) {

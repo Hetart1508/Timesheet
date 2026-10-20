@@ -3,10 +3,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import AppShell from './AppShell.jsx';
 
+const { switchWorkspace } = vi.hoisted(() => ({ switchWorkspace: vi.fn() }));
+
 vi.mock('../../context/AuthContext.jsx', () => ({
   useAuth: () => ({
     user: { role: 'ADMIN', fullName: 'Morgan Admin' },
     logout: vi.fn(),
+    switchWorkspace,
   }),
 }));
 
@@ -50,5 +53,12 @@ describe('AppShell mobile navigation', () => {
     render(<MemoryRouter><AppShell><h1>Workspace</h1></AppShell></MemoryRouter>);
     expect(screen.getByRole('link', { name: 'Work calendar' })).toHaveAttribute('href', '/admin/work-calendar');
     expect(screen.getByRole('link', { name: 'Temporary' })).toHaveAttribute('href', '/admin/temporary');
+  });
+
+  it('lets an Admin switch to the Agent workspace from the navigation', async () => {
+    switchWorkspace.mockResolvedValueOnce({ role: 'AGENT', accountRole: 'ADMIN' });
+    render(<MemoryRouter><AppShell><h1>Workspace</h1></AppShell></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to Agent workspace' }));
+    expect(switchWorkspace).toHaveBeenCalledWith('AGENT');
   });
 });

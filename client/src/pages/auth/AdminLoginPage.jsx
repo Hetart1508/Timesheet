@@ -42,13 +42,13 @@ export default function AdminLoginPage() {
 
   const startOver = () => { setChallenge(null); setOtp(''); setError(''); setMessage(''); };
 
-  return <AuthShell eyebrow="Protected Admin portal" title={challenge ? 'Enter your security code' : 'Admin sign in'} description={challenge ? 'Check the Admin email inbox, then enter the one-time code.' : 'Admin access always requires an email, password, and a fresh email security code.'} footer={<><span>First-time setup? <Link to="/admin/register">Create the Admin account</Link></span><span className="auth-footer-separator">Are you an Agent? <Link to="/login/agent">Use Agent sign in</Link></span></>}>
+  return <AuthShell compact brandTo="/login" eyebrow="Protected Admin portal" title={challenge ? 'Enter your security code' : 'Admin sign in'} description={challenge ? 'Check the Admin email inbox, then enter the one-time code.' : 'Admin access always requires an email, password, and a fresh email security code.'} footer={<span>First-time setup? <Link to="/admin/register">Create the Admin account</Link></span>}>
     <div className="security-notice"><ShieldCheck size={20} aria-hidden="true" /><span>Two-step verification is required for every Admin sign-in.</span></div>
     {!challenge ? <form className="auth-form" onSubmit={requestCode}>
       <Alert>{error}</Alert>
       <FormField label="Admin email" name="admin-email" type="email" autoComplete="username" required value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} />
       <FormField label="Password" name="admin-password" type="password" autoComplete="current-password" required value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} />
-      <div className="form-meta"><Link to="/forgot-password">Forgot password?</Link></div>
+      <div className="form-meta"><Link to="/forgot-password?portal=admin">Forgot password?</Link></div>
       <button className="primary-button" disabled={submitting}>{submitting ? 'Sending code…' : 'Continue and send code'}</button>
     </form> : <form className="auth-form" onSubmit={verifyCode}>
       <Alert>{error}</Alert><Alert type="success">{message}</Alert>

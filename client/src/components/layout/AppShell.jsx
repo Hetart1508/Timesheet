@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BarChart3, Building2, CalendarDays, CalendarRange, Clock3, Download, FileCheck2, FileInput, FileText, History, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, Building2, CalendarDays, CalendarRange, Clock3, Download, FileCheck2, FileInput, FileText, History, LayoutDashboard, LogOut, Menu, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 import { LazyMotion, domAnimation, m as motion, useReducedMotion } from 'motion/react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -18,10 +18,18 @@ const adminLinks = [
 ];
 
 export default function AppShell({ children }) {
-  const { user, logout } = useAuth(); const navigate = useNavigate(); const location = useLocation(); const reduceMotion = useReducedMotion(); const [open, setOpen] = useState(false);
+  const { user, logout, switchWorkspace } = useAuth(); const navigate = useNavigate(); const location = useLocation(); const reduceMotion = useReducedMotion(); const [open, setOpen] = useState(false);
+  const [switching, setSwitching] = useState(false); const [switchError, setSwitchError] = useState('');
   const menuButtonRef = useRef(null); const closeButtonRef = useRef(null);
   const links = user.role === 'ADMIN' ? adminLinks : agentLinks;
-  const signOut = async () => { const loginPath = user.role === 'ADMIN' ? '/login/admin' : '/login/agent'; await logout(); navigate(loginPath, { replace: true }); };
+  const signOut = async () => { await logout(); navigate('/login', { replace: true }); };
+  const canSwitchWorkspace = (user.accountRole || user.role) === 'ADMIN';
+  const changeWorkspace = async () => {
+    setSwitching(true); setSwitchError('');
+    try { await switchWorkspace(user.role === 'ADMIN' ? 'AGENT' : 'ADMIN'); setOpen(false); navigate('/dashboard'); }
+    catch { setSwitchError('The workspace could not be changed. Please try again.'); }
+    finally { setSwitching(false); }
+  };
   const closeNavigation = () => { setOpen(false); menuButtonRef.current?.focus(); };
   useEffect(() => {
     if (!open) return undefined;
@@ -30,5 +38,5 @@ export default function AppShell({ children }) {
     closeButtonRef.current?.focus();
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [open]);
-  return <LazyMotion features={domAnimation}><div className="app-shell"><a className="skip-link" href="#main-content">Skip to content</a><header className="topbar"><Link className="brand" to="/dashboard"><span className="brand-mark"><Clock3 size={21} /></span><span>Timesheet</span></Link><div className="topbar-account"><span><small>{user.role === 'ADMIN' ? 'Administrator' : 'Agent'}</small>{user.fullName}</span><Link aria-label="Account settings" to="/profile"><UserRound /></Link><button className="text-button" onClick={signOut}><LogOut /> <span>Sign out</span></button><button ref={menuButtonRef} className="mobile-menu" aria-label="Open navigation" aria-expanded={open} aria-controls="app-navigation" onClick={() => setOpen(true)}><Menu /></button></div></header>{open ? <button className="sidebar-backdrop" aria-label="Dismiss navigation" onClick={closeNavigation} /> : null}<div className="shell-body"><aside id="app-navigation" className={`sidebar ${open ? 'open' : ''}`}><div className="sidebar-mobile-head"><strong>Menu</strong><button ref={closeButtonRef} className="icon-button" aria-label="Close navigation" onClick={closeNavigation}><X /></button></div><p>{user.role === 'ADMIN' ? 'Admin workspace' : 'My workspace'}</p><nav aria-label="Primary navigation">{links.map(([to, label, Icon]) => <NavLink key={`${to}-${label}`} to={to} end={to === '/dashboard'} onClick={closeNavigation} className={({ isActive }) => isActive ? 'active' : ''}><Icon /> {label}</NavLink>)}</nav><div className="access-card"><i className={user.role === 'ADMIN' ? 'admin' : ''} /><strong>{user.role === 'ADMIN' ? 'Admin access' : 'Agent access'}</strong><span>{user.role === 'ADMIN' ? 'Review and reporting tools' : 'Visit logging is ready'}</span></div></aside><motion.main id="main-content" key={location.pathname} className="workspace" tabIndex="-1" initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}>{children}</motion.main></div></div></LazyMotion>;
+  return <LazyMotion features={domAnimation}><div className="app-shell"><a className="skip-link" href="#main-content">Skip to content</a><header className="topbar"><Link className="brand" to="/dashboard"><span className="brand-mark"><Clock3 size={21} /></span><span>Timesheet</span></Link><div className="topbar-account"><span><small>{user.role === 'ADMIN' ? 'Administrator' : 'Agent'}</small>{user.fullName}</span><Link aria-label="Account settings" to="/profile"><UserRound /></Link><button className="text-button" onClick={signOut}><LogOut /> <span>Sign out</span></button><button ref={menuButtonRef} className="mobile-menu" aria-label="Open navigation" aria-expanded={open} aria-controls="app-navigation" onClick={() => setOpen(true)}><Menu /></button></div></header>{open ? <button className="sidebar-backdrop" aria-label="Dismiss navigation" onClick={closeNavigation} /> : null}<div className="shell-body"><aside id="app-navigation" className={`sidebar ${open ? 'open' : ''}`}><div className="sidebar-mobile-head"><strong>Menu</strong><button ref={closeButtonRef} className="icon-button" aria-label="Close navigation" onClick={closeNavigation}><X /></button></div><p>{user.role === 'ADMIN' ? 'Admin workspace' : 'My workspace'}</p><nav aria-label="Primary navigation">{links.map(([to, label, Icon]) => <NavLink key={`${to}-${label}`} to={to} end={to === '/dashboard'} onClick={closeNavigation} className={({ isActive }) => isActive ? 'active' : ''}><Icon /> {label}</NavLink>)}</nav>{canSwitchWorkspace ? <button className="workspace-switch" onClick={changeWorkspace} disabled={switching}><ArrowLeftRight /> {switching ? 'Switching…' : `Switch to ${user.role === 'ADMIN' ? 'Agent' : 'Admin'} workspace`}</button> : null}{switchError ? <p className="workspace-switch-error" role="alert">{switchError}</p> : null}<div className="access-card"><i className={user.role === 'ADMIN' ? 'admin' : ''} /><strong>{user.role === 'ADMIN' ? 'Admin access' : 'Agent access'}</strong><span>{user.role === 'ADMIN' ? 'Review and reporting tools' : 'Visit logging is ready'}</span></div></aside><motion.main id="main-content" key={location.pathname} className="workspace" tabIndex="-1" initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}>{children}</motion.main></div></div></LazyMotion>;
 }

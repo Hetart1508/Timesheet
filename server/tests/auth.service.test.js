@@ -141,9 +141,34 @@ describe('login and sessions', () => {
     });
     expect(result.user).toMatchObject({ role: 'ADMIN', email: 'admin@example.com' });
     expect(repository.sessions.size).toBe(1);
+    expect([...repository.sessions.values()][0].activeRole).toBe('ADMIN');
     await expect(service.verifyAdminLogin({
       challengeId: challenge.challengeId, email: 'admin@example.com', otp: email.sent.at(-1).token,
     })).rejects.toMatchObject({ code: 'ADMIN_OTP_INVALID' });
+  });
+
+  it('lets an MFA-authenticated Admin switch to Agent workspace and back', async () => {
+    verifiedAdmin(repository);
+    const challenge = await service.requestAdminLogin({ email: 'admin@example.com', password: 'correct horse battery' });
+    const login = await service.verifyAdminLogin({
+      challengeId: challenge.challengeId, email: 'admin@example.com', otp: email.sent.at(-1).token,
+    });
+    const sessionId = [...repository.sessions.keys()][0];
+    const agentUser = await service.switchWorkspace(login.user, sessionId, 'AGENT', { ip: '127.0.0.1' });
+    expect(agentUser).toMatchObject({ role: 'AGENT', accountRole: 'ADMIN', roles: ['ADMIN', 'AGENT'] });
+    expect(repository.findAuthenticatedUser(login.user.id, sessionId).role).toBe('AGENT');
+
+    const adminUser = await service.switchWorkspace(agentUser, sessionId, 'ADMIN', { ip: '127.0.0.1' });
+    expect(adminUser.role).toBe('ADMIN');
+    expect(repository.audits.filter((item) => item.action === 'WORKSPACE_SWITCHED')).toHaveLength(2);
+  });
+
+  it('does not let an Agent enter the Admin workspace', async () => {
+    verifiedAgent(repository);
+    const login = await service.login({ email: 'asha@example.com', password: 'correct horse battery' });
+    const sessionId = [...repository.sessions.keys()][0];
+    await expect(service.switchWorkspace(login.user, sessionId, 'ADMIN'))
+      .rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 
   it('does not allow an Agent account to start Admin login', async () => {

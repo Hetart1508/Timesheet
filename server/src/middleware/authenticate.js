@@ -16,7 +16,8 @@ export function createAuthenticate(repository = defaultRepository) {
     }
     req.user = {
       id: Number(user.id), fullName: user.full_name, username: user.username, email: user.email,
-      role: user.role, status: user.status,
+      role: user.role, accountRole: user.account_role || user.role,
+      roles: (user.account_role || user.role) === 'ADMIN' ? ['ADMIN', 'AGENT'] : ['AGENT'], status: user.status,
     };
     req.sessionId = payload.sid;
     next();

@@ -72,6 +72,7 @@ export class AdminService {
   async agents(filters) {
     const result = await this.repository.listAgents(filters);
     return { agents: result.rows.map((row) => ({ id: Number(row.id), fullName: row.full_name, username: row.username, email: row.email, status: row.status,
+      accountRole: row.account_role || 'AGENT', canManageStatus: (row.account_role || 'AGENT') === 'AGENT',
       emailVerified: Boolean(row.is_email_verified), createdAt: row.created_at, totalTimesheets: Number(row.total_timesheets), totalVisits: Number(row.total_visits), totalDuration: duration(row.total_minutes) })),
       pagination: { page: filters.page, pageSize: filters.pageSize, total: result.total } };
   }

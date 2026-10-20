@@ -72,7 +72,8 @@ export class EmailService {
   }
 
   sendPasswordReset(user, rawToken) {
-    const url = `${this.config.APP_BASE_URL}/reset-password?token=${encodeURIComponent(rawToken)}`;
+    const portal = user.role === 'ADMIN' ? '&portal=admin' : '';
+    const url = `${this.config.APP_BASE_URL}/reset-password?token=${encodeURIComponent(rawToken)}${portal}`;
     return this.sendTracked({ recipient: user.email, type: 'PASSWORD_RESET', entityId: user.id, template: templates.passwordReset({ name: user.fullName, url }), developmentLink: url });
   }
 

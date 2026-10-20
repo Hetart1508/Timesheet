@@ -2,13 +2,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import LoginPage from './LoginPage.jsx';
+import AdminLoginPage from './AdminLoginPage.jsx';
 import RequestEmailPage from './RequestEmailPage.jsx';
 import VerifyEmailPage from './VerifyEmailPage.jsx';
 
-const { login, post } = vi.hoisted(() => ({ login: vi.fn(), post: vi.fn() }));
+const { login, requestAdminLogin, verifyAdminLogin, post } = vi.hoisted(() => ({ login: vi.fn(), requestAdminLogin: vi.fn(), verifyAdminLogin: vi.fn(), post: vi.fn() }));
 
 vi.mock('../../context/AuthContext.jsx', () => ({
-  useAuth: () => ({ user: null, login }),
+  useAuth: () => ({ user: null, login, requestAdminLogin, verifyAdminLogin }),
 }));
 
 vi.mock('../../api/client.js', () => ({
@@ -18,7 +19,7 @@ vi.mock('../../api/client.js', () => ({
 }));
 
 afterEach(cleanup);
-beforeEach(() => { login.mockReset(); post.mockReset(); });
+beforeEach(() => { login.mockReset(); requestAdminLogin.mockReset(); verifyAdminLogin.mockReset(); post.mockReset(); });
 
 function renderAuthFlow() {
   return render(<MemoryRouter initialEntries={['/login/agent']}><Routes>
@@ -34,6 +35,21 @@ describe('Agent sign-in verification flow', () => {
 
     expect(screen.getByRole('link', { name: 'Forgot password?' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /verify email|resend code|verification/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /admin/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps Admin sign-in on its own portal without an Agent switch link', () => {
+    render(<MemoryRouter><AdminLoginPage /></MemoryRouter>);
+
+    expect(screen.getByRole('link', { name: 'Timesheet' })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: /agent sign in/i })).not.toBeInTheDocument();
+  });
+
+  it('returns Admin password recovery to the Admin portal', () => {
+    render(<MemoryRouter initialEntries={['/forgot-password?portal=admin']}><RequestEmailPage mode="reset" /></MemoryRouter>);
+
+    expect(screen.getByRole('link', { name: 'Back to sign in' })).toHaveAttribute('href', '/login/admin');
+    expect(screen.getByRole('link', { name: 'Timesheet' })).toHaveAttribute('href', '/login/admin');
   });
 
   it('shows verification steps only after an unverified sign-in attempt', async () => {

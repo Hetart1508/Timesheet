@@ -22,7 +22,8 @@ export class AuthRepository {
 
   async findAuthenticatedUser(userId, sessionId, connection = pool) {
     const [rows] = await connection.execute(
-      `SELECT u.id, u.full_name, u.username, u.email, u.password_hash, u.role,
+      `SELECT u.id, u.full_name, u.username, u.email, u.password_hash,
+              u.role AS account_role, s.active_role AS role,
               u.is_email_verified, u.status, u.created_at, u.last_login_at
        FROM users u JOIN auth_sessions s ON s.user_id = u.id
        WHERE u.id = ? AND s.id = ? AND s.revoked_at IS NULL AND s.expires_at > UTC_TIMESTAMP(6)
@@ -173,16 +174,17 @@ export class AuthRepository {
   async createSession(data, connection = pool) {
     await connection.execute(
       `INSERT INTO auth_sessions
-        (id, user_id, refresh_token_hash, expires_at, created_at, ip_address, user_agent)
-        VALUES (?, ?, ?, ?, UTC_TIMESTAMP(6), ?, ?)`,
-            [data.id, data.userId, data.refreshTokenHash, data.expiresAt, data.ipAddress, data.userAgent],
+        (id, user_id, active_role, refresh_token_hash, expires_at, created_at, ip_address, user_agent)
+        VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(6), ?, ?)`,
+            [data.id, data.userId, data.activeRole, data.refreshTokenHash, data.expiresAt, data.ipAddress, data.userAgent],
     );
   }
 
   async rotateSession(currentHash, nextHash, connection) {
     const [rows] = await connection.execute(
       `SELECT s.id AS session_id, s.user_id AS id, s.user_id, s.refresh_token_hash, s.previous_token_hash, s.expires_at, s.revoked_at,
-              u.full_name, u.username, u.email, u.role, u.is_email_verified, u.status
+              u.full_name, u.username, u.email, u.role AS account_role, s.active_role AS role,
+              u.is_email_verified, u.status
        FROM auth_sessions s JOIN users u ON u.id = s.user_id
        WHERE s.refresh_token_hash = ? OR s.previous_token_hash = ? FOR UPDATE`, [currentHash, currentHash],
     );
@@ -198,6 +200,18 @@ export class AuthRepository {
        last_used_at = UTC_TIMESTAMP(6) WHERE id = ?`, [nextHash, session.session_id],
     );
     return session;
+  }
+
+  async switchWorkspace(userId, sessionId, role, connection = pool) {
+    const [result] = await connection.execute(
+      `UPDATE auth_sessions s JOIN users u ON u.id = s.user_id
+       SET s.active_role = ?
+       WHERE s.id = ? AND s.user_id = ? AND s.revoked_at IS NULL
+         AND s.expires_at > UTC_TIMESTAMP(6)
+         AND (? = 'AGENT' OR u.role = 'ADMIN')`,
+      [role, sessionId, userId, role],
+    );
+    return result.affectedRows === 1;
   }
 
   async revokeSessionByToken(tokenHash, connection = pool) {

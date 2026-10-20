@@ -36,6 +36,11 @@ export function AuthProvider({ children }) {
       setUser(data.data.user);
       return data.data.user;
     },
+    async switchWorkspace(role) {
+      const { data } = await api.post('/auth/workspace', { role });
+      setUser(data.data.user);
+      return data.data.user;
+    },
     async logout() {
       try { await api.post('/auth/logout'); } finally { setUser(null); }
     },

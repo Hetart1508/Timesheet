@@ -6,7 +6,9 @@ This guide explains the Admin side of the Timesheet Portal: reviewing work, mana
 
 ## Admin access
 
-Open the Admin sign-in page at `/login/admin` (the older `/admin/login` address redirects there). Enter your Admin email and password. Each Admin sign-in also requires a fresh six-digit security code sent to the registered Admin email. Enter the code before it expires to finish signing in.
+Open `/login`, then choose **Admin sign in**. The direct `/login/admin` address and older `/admin/login` address also remain available for bookmarks. Enter your Admin email and password. Each Admin sign-in also requires a fresh six-digit security code sent to the registered Admin email. Enter the code before it expires to finish signing in.
+
+If you need to record your own field work, open the navigation menu and choose **Switch to Agent workspace**. Choose **Switch to Admin workspace** from the same menu when you are finished. Workspace changes apply only to your current session and are recorded in the audit log; you never need to edit the URL.
 
 The Admin account is a one-time setup account. If setup has not yet been completed, follow the onboarding instructions for creating the first Admin account. Do not use the one-time setup flow for ordinary sign-ins.
 
@@ -68,7 +70,7 @@ The calendar updates only after filters are applied. With a specific Agent selec
 
 ## Manage Agent accounts
 
-Use the Agent directory to search by name, username, or email. The directory distinguishes **Verified** email from **Active** account status; verification alone does not mean that an account is currently allowed to sign in.
+Use the Agent directory to search by name, username, or email. The directory distinguishes **Verified** email from **Active** account status; verification alone does not mean that an account is currently allowed to sign in. The Admin appears as **Admin + Agent** for reporting and invoice selection, but the protected Admin account cannot be deactivated here.
 
 - Select **Deactivate** and confirm to disable an Agent. Their active sessions are revoked, and they cannot sign in while inactive. Their existing timesheets and visit history are retained.
 - Select **Activate** and confirm to restore access. The Agent must sign in again because the old sessions remain revoked.

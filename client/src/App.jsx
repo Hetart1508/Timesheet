@@ -5,6 +5,7 @@ import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import PublicOnlyRoute from './routes/PublicOnlyRoute.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import AdminLoginPage from './pages/auth/AdminLoginPage.jsx';
+import PortalLoginPage from './pages/auth/PortalLoginPage.jsx';
 import AdminRegisterPage from './pages/auth/AdminRegisterPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
@@ -38,9 +39,9 @@ export default function App() {
       <Routes>
         <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
         <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<PortalLoginPage />} />
           <Route path="/login/agent" element={<LoginPage />} />
           <Route path="/login/admin" element={<AdminLoginPage />} />
-          <Route path="/login" element={<Navigate to="/login/agent" replace />} />
           <Route path="/admin/login" element={<Navigate to="/login/admin" replace />} />
           <Route path="/admin/register" element={<AdminRegisterPage />} />
           <Route path="/register" element={<RegisterPage />} />

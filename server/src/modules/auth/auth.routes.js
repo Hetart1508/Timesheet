@@ -10,7 +10,7 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 import {
   acceptAgentInvitationSchema, adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema, loginSchema, registrationSchema,
-  resetPasswordSchema, verifyOtpSchema,
+  resetPasswordSchema, verifyOtpSchema, workspaceSchema,
 } from './auth.schemas.js';
 
 const publicLimiter = rateLimit({
@@ -99,6 +99,11 @@ export function createAuthRouter(options = {}) {
   router.get('/me', authenticate, (req, res) => {
     res.json({ success: true, data: { user: req.user }, message: 'Authenticated user loaded' });
   });
+
+  router.post('/workspace', authenticate, requireCsrf, validate(workspaceSchema), asyncHandler(async (req, res) => {
+    const user = await service.switchWorkspace(req.user, req.sessionId, req.validated.body.role, { ip: req.ip });
+    res.json({ success: true, data: { user }, message: `${req.validated.body.role === 'ADMIN' ? 'Admin' : 'Agent'} workspace opened` });
+  }));
 
   router.post('/forgot-password', publicLimiter, validate(emailSchema), asyncHandler(async (req, res) => {
     await service.forgotPassword(req.validated.body.email);

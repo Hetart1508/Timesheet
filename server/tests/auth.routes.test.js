@@ -15,8 +15,16 @@ const service = {
   verifyAdminLogin: vi.fn(async () => ({
     user: { id: 2, role: 'ADMIN' }, accessToken: 'admin-access', refreshToken: 'admin-refresh', csrfToken: 'admin-csrf',
   })),
+  switchWorkspace: vi.fn(async (_user, _sessionId, role) => ({
+    id: 2, role, accountRole: 'ADMIN', roles: ['ADMIN', 'AGENT'],
+  })),
 };
-const app = createApp({ authRouter: createAuthRouter({ service, repository: { revokeAllSessions: vi.fn() }, authenticate: (_req, _res, next) => next() }) });
+const authenticate = (req, _res, next) => {
+  req.user = { id: 2, role: 'ADMIN', accountRole: 'ADMIN', roles: ['ADMIN', 'AGENT'] };
+  req.sessionId = 'session-id';
+  next();
+};
+const app = createApp({ authRouter: createAuthRouter({ service, repository: { revokeAllSessions: vi.fn() }, authenticate }) });
 
 describe('auth API contracts', () => {
   it('rejects a public role field instead of trusting it', async () => {
@@ -72,6 +80,14 @@ describe('auth API contracts', () => {
   it('rejects refresh without a matching CSRF header and cookie', async () => {
     const response = await request(app).post('/api/v1/auth/refresh').expect(403);
     expect(response.body.code).toBe('CSRF_TOKEN_INVALID');
+  });
+
+  it('switches an authenticated Admin session into the Agent workspace', async () => {
+    const response = await request(app).post('/api/v1/auth/workspace')
+      .set('Cookie', 'ts_csrf=csrf-token').set('X-CSRF-Token', 'csrf-token')
+      .send({ role: 'AGENT' }).expect(200);
+    expect(service.switchWorkspace).toHaveBeenCalledWith(expect.objectContaining({ accountRole: 'ADMIN' }), 'session-id', 'AGENT', expect.any(Object));
+    expect(response.body.data.user).toMatchObject({ role: 'AGENT', accountRole: 'ADMIN' });
   });
 });
 
