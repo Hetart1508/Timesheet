@@ -22,7 +22,7 @@ export default function TimesheetReviewModal({ id, onClose, onReviewed }) {
   return <div className="modal-backdrop timesheet-preview-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="modal-card timesheet-preview-modal" role="dialog" aria-modal="true" aria-labelledby="timesheet-preview-title">
       <header className="timesheet-preview-header"><div><p className="eyebrow">Administrative review</p><h2 id="timesheet-preview-title">Timesheet preview</h2></div><button ref={closeButtonRef} type="button" className="icon-button" aria-label="Close timesheet preview" onClick={onClose}><X /></button></header>
-      <div className="timesheet-preview-body"><TimesheetReviewContent id={id} onReviewed={onReviewed} /></div>
+      <div className="timesheet-preview-body"><TimesheetReviewContent id={id} onReviewed={onReviewed} compact /></div>
     </section>
   </div>;
 }

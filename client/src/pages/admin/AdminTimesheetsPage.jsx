@@ -96,7 +96,7 @@ export default function AdminTimesheetsPage({ defaultStatus = '' }) {
       : null}
       <Alert>{agentError ? <>Could not load Agent filters. <button className="text-action" type="button" onClick={loadAgents}>Retry</button></> : null}</Alert>
       {!result ? <RequestState error={loadError} label="Loading timesheets…" onRetry={load} /> : <>
-        {result.timesheets.length ? <div className="table-wrap"><table className="data-table admin-data-table"><thead><tr>
+        {result.timesheets.length ? <div className="table-wrap"><table className="data-table admin-data-table timesheet-list-table"><thead><tr>
           <SortHeader field="agentName" label="Agent" applied={applied} onSort={changeSort} />
           <SortHeader field="workDate" label="Work date" applied={applied} onSort={changeSort} />
           <SortHeader field="visitCount" label="Visits" applied={applied} onSort={changeSort} />

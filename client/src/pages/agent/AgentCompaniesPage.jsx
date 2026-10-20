@@ -3,6 +3,7 @@ import { Building2, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import AppShell from '../../components/layout/AppShell.jsx';
 import Alert from '../../components/common/Alert.jsx';
 import RequestState from '../../components/common/RequestState.jsx';
+import VoiceTextarea from '../../components/forms/VoiceTextarea.jsx';
 import { agentApi } from '../../api/timesheets.js';
 import { errorMessage } from '../../api/client.js';
 import useDebouncedValue from '../../hooks/useDebouncedValue.js';
@@ -68,9 +69,9 @@ export default function AgentCompaniesPage() {
       <div className="section-heading"><div><p className="eyebrow">{editing ? 'Edit submission' : 'New submission'}</p><h2>{editing ? 'Update company details' : 'Add a company'}</h2></div>{editing ? <button className="icon-button" aria-label="Cancel company edit" onClick={beginCreate}><X /></button> : null}</div>
       <form className="business-form" onSubmit={submit}>
         <label className="field"><span>Company name</span><input required minLength="2" maxLength="180" value={form.companyName} onChange={(event) => setForm({ ...form, companyName: event.target.value })} /></label>
-        <label className="field"><span>Address</span><textarea required minLength="3" maxLength="500" rows="2" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></label>
+        <label className="field"><span>Address</span><VoiceTextarea required minLength="3" maxLength={500} rows="2" value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} /></label>
         <div className="two-fields"><label className="field"><span>Contact person</span><input maxLength="120" value={form.contactPerson} onChange={(event) => setForm({ ...form, contactPerson: event.target.value })} /></label><label className="field"><span>Contact phone</span><input maxLength="30" value={form.contactPhone} onChange={(event) => setForm({ ...form, contactPhone: event.target.value })} /></label></div>
-        <label className="field"><span>Notes</span><textarea maxLength="2000" rows="3" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></label>
+        <label className="field"><span>Notes</span><VoiceTextarea maxLength={2000} rows="3" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></label>
         {!editing ? <p className="form-help">New submissions are available for your visits immediately and remain pending until an Admin reviews them.</p> : null}
         <div className="form-actions"><button className="primary-button" disabled={busy}>{busy ? 'Saving…' : editing ? <><Pencil size={16} /> Save changes</> : <><Plus size={16} /> Create company</>}</button></div>
       </form>
