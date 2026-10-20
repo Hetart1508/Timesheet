@@ -32,6 +32,9 @@ export const historySchema = envelope({
   query: z.object({
     startDate: date.optional(), endDate: date.optional(),
     status: z.enum(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED']).optional(),
+    search: z.string().trim().max(100).default(''),
+    sortBy: z.enum(['workDate', 'visitCount', 'duration', 'status']).default('workDate'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
     page: z.coerce.number().int().positive().default(1),
     pageSize: z.coerce.number().int().min(1).max(50).default(10),
   }),

@@ -34,7 +34,9 @@ const visit = {
 
 describe('Agent timesheet business rules', () => {
   it('defaults timesheet and company lists to 10 rows per page', () => {
-    expect(historySchema.parse({ body: {}, params: {}, query: {} }).query).toMatchObject({ page: 1, pageSize: 10 });
+    expect(historySchema.parse({ body: {}, params: {}, query: {} }).query).toMatchObject({
+      search: '', sortBy: 'workDate', sortOrder: 'desc', page: 1, pageSize: 10,
+    });
     expect(companyListSchema.parse({ body: {}, params: {}, query: {} }).query).toMatchObject({ page: 1, pageSize: 10 });
   });
 

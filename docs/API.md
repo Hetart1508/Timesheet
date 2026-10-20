@@ -60,7 +60,7 @@ All routes are under `/api/v1/agent` and require an active Agent session. A dail
 | Method | Path | Access | Description |
 | --- | --- | --- | --- |
 | GET | `/dashboard` | Agent | Current business date, today’s sheet summary, and recent sheets. |
-| GET | `/timesheets` | Agent | History filtered by `startDate`, `endDate`, `status`, `page`, and `pageSize` (maximum 50). |
+| GET | `/timesheets` | Agent | History supports `search`, `startDate`, `endDate`, `status`, `sortBy` (`workDate`, `visitCount`, `duration`, or `status`), `sortOrder`, `page`, and `pageSize` (maximum 50). Search covers sheet text and visit/company details. |
 | POST | `/timesheets` | Agent + CSRF | Create or open the daily sheet for optional `workDate`. |
 | GET | `/timesheets/:id` | Owning Agent | Sheet declaration, visits, and review details. |
 | PUT | `/timesheets/:id` | Owning Agent + CSRF | Save `{ "dailySummary": "..." }`. |

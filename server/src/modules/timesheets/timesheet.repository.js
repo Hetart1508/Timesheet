@@ -57,12 +57,22 @@ export class TimesheetRepository {
     if (filters.startDate) { where.push('t.work_date >= ?'); values.push(filters.startDate); }
     if (filters.endDate) { where.push('t.work_date <= ?'); values.push(filters.endDate); }
     if (filters.status) { where.push('t.status = ?'); values.push(filters.status); }
+    if (filters.search) {
+      where.push(`(DATE_FORMAT(t.work_date, '%Y-%m-%d') LIKE ? OR t.status LIKE ? OR t.daily_summary LIKE ? OR t.review_comment LIKE ?
+        OR EXISTS (SELECT 1 FROM visits sv WHERE sv.timesheet_id = t.id AND sv.deleted_at IS NULL
+          AND (sv.company_name_snapshot LIKE ? OR sv.contact_person LIKE ? OR sv.purpose LIKE ? OR sv.visit_notes LIKE ?)))`);
+      const search = `%${filters.search}%`;
+      values.push(search, search, search, search, search, search, search, search);
+    }
     const offset = (filters.page - 1) * filters.pageSize;
+    const sortColumns = { workDate: 't.work_date', visitCount: 'visit_count', duration: 'duration_minutes', status: 't.status' };
+    const sortColumn = sortColumns[filters.sortBy] || sortColumns.workDate;
+    const sortOrder = filters.sortOrder === 'asc' ? 'ASC' : 'DESC';
     const [rows] = await connection.execute(
       `SELECT t.id, t.work_date, t.status, t.submitted_at, t.review_comment, COUNT(v.id) AS visit_count,
               COALESCE(SUM(TIMESTAMPDIFF(MINUTE, v.check_in_at, v.check_out_at)), 0) AS duration_minutes
        FROM timesheets t LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL
-       WHERE ${where.join(' AND ')} GROUP BY t.id ORDER BY t.work_date DESC LIMIT ? OFFSET ?`,
+       WHERE ${where.join(' AND ')} GROUP BY t.id ORDER BY ${sortColumn} ${sortOrder}, t.id DESC LIMIT ? OFFSET ?`,
       [...values, filters.pageSize, offset],
     );
     const [countRows] = await connection.execute(`SELECT COUNT(*) AS total FROM timesheets t WHERE ${where.join(' AND ')}`, values);

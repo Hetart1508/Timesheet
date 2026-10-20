@@ -133,7 +133,7 @@ export default function TimesheetPage() {
     <Link className="back-link" to="/timesheets"><ArrowLeft size={16} /> All timesheets</Link>
     <section className="detail-heading"><div><p className="eyebrow">Daily timesheet</p><h1>{formatWorkDate(sheet.workDate)}</h1><p>{sheet.visits.length} {sheet.visits.length === 1 ? 'company visit' : 'company visits'} · {formatDuration({ minutes: sheet.visits.reduce((sum, item) => sum + item.duration.minutes, 0) })}</p></div><StatusBadge status={sheet.status} /></section>
     <ol className="timesheet-progress" aria-label="Timesheet completion"><li className={sheet.visits.length ? 'done' : 'current'}><b>{sheet.visits.length ? '✓' : '1'}</b><span>Add visits</span></li><li className={summaryReady ? 'done' : sheet.visits.length ? 'current' : ''}><b>{summaryReady ? '✓' : '2'}</b><span>Write summary</span></li><li className={submitted ? 'done' : summaryReady ? 'current' : ''}><b>{submitted ? '✓' : '3'}</b><span>Submit</span></li></ol>
-    {sheet.reviewComment ? <Alert type="error"><strong>Reviewer feedback:</strong> {sheet.reviewComment}</Alert> : null}
+    {sheet.reviewComment ? <Alert type="info"><strong>Reviewer feedback:</strong> {sheet.reviewComment}</Alert> : null}
     <Alert>{error}</Alert><Alert type="success">{success}</Alert>
 
     {showVisitForm ? <section className="content-card form-card section-block">
