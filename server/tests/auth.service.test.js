@@ -107,8 +107,12 @@ describe('Agent invitation acceptance', () => {
 describe('login and sessions', () => {
   it('logs an Agent in using a verified email and password', async () => {
     verifiedAgent(repository);
-    const byEmail = await service.login({ email: 'ASHA@EXAMPLE.COM', password: 'correct horse battery' });
+    const byEmail = await service.login(
+      { email: 'ASHA@EXAMPLE.COM', password: 'correct horse battery' },
+      { ip: '::ffff:192.0.2.7' },
+    );
     expect(byEmail.user.email).toBe('asha@example.com');
+    expect([...repository.sessions.values()][0].ipAddress).toBe('192.0.2.7');
   });
 
   it('uses a generic failure for missing users and invalid passwords', async () => {

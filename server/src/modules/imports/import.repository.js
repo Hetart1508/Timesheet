@@ -63,8 +63,8 @@ export class ImportRepository {
   }
 
   async auditImport(data, connection) {
-    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address)
-      VALUES (?, 'EXCEL_DATA_IMPORTED', 'DATA_IMPORT', ?, ?, ?)`, [data.actorId, String(data.importId), JSON.stringify(data.summary), data.ipAddress || null]);
+    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address, created_at)
+      VALUES (?, 'EXCEL_DATA_IMPORTED', 'DATA_IMPORT', ?, ?, ?, UTC_TIMESTAMP(6))`, [data.actorId, String(data.importId), JSON.stringify(data.summary), data.ipAddress || null]);
   }
 
   async history(connection = pool) {

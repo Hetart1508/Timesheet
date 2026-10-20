@@ -146,7 +146,10 @@ describe('admin list table controls', () => {
     await waitFor(() => expect(adminApi.listAudits).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
 
     fireEvent.click(screen.getByText('View changes'));
-    expect(screen.getByText((_, element) => element.tagName === 'PRE' && element.textContent.includes('"status": "SUBMITTED"'))).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Change summary' })).toHaveTextContent('Status');
+    expect(screen.getByRole('region', { name: 'Change summary' })).toHaveTextContent('Submitted');
+    expect(screen.getByRole('region', { name: 'Change summary' })).toHaveTextContent('Approved');
+    expect(screen.queryByText(/"status"/)).not.toBeInTheDocument();
   });
 
   it('automatically searches the Agent directory and Company list', async () => {

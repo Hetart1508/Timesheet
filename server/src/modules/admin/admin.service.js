@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/app-error.js';
+import { ipVersion, normalizeIpAddress } from '../../utils/ip-address.js';
 import { currentBusinessDate, utcToIstTime } from '../../utils/business-time.js';
 
 const dateOnly = (value) => value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
@@ -108,20 +109,23 @@ export class AdminService {
   async sessions(filters) {
     const result = await this.repository.listSessions(filters);
     return {
-      sessions: result.rows.map((row) => ({
-        id: row.id,
-        userId: Number(row.user_id),
-        fullName: row.full_name,
-        email: row.email,
-        role: row.role,
-        ipAddress: row.ip_address,
-        ipVersion: row.ip_address ? (row.ip_address.includes(':') && !row.ip_address.startsWith('::ffff:') ? 'IPv6' : 'IPv4') : null,
-        userAgent: row.user_agent,
-        loginAt: row.created_at,
-        lastUsedAt: row.last_used_at,
-        expiresAt: row.expires_at,
-        status: row.session_status,
-      })),
+      sessions: result.rows.map((row) => {
+        const address = normalizeIpAddress(row.ip_address);
+        return {
+          id: row.id,
+          userId: Number(row.user_id),
+          fullName: row.full_name,
+          email: row.email,
+          role: row.role,
+          ipAddress: address,
+          ipVersion: ipVersion(address),
+          userAgent: row.user_agent,
+          loginAt: row.created_at,
+          lastUsedAt: row.last_used_at,
+          expiresAt: row.expires_at,
+          status: row.session_status,
+        };
+      }),
       pagination: { page: filters.page, pageSize: filters.pageSize, total: result.total },
     };
   }

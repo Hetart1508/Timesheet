@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.API_BASE_URL || 'http://localhost:5001',
           changeOrigin: true,
+          xfwd: true,
         },
       },
     },

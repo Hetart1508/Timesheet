@@ -38,8 +38,8 @@ export class AgentImportRepository {
   }
 
   async auditAgentImport(data, connection) {
-    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address)
-      VALUES (?, 'AGENTS_INVITED_FROM_EXCEL', 'AGENT_IMPORT', ?, ?, ?)`, [
+    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address, created_at)
+      VALUES (?, 'AGENTS_INVITED_FROM_EXCEL', 'AGENT_IMPORT', ?, ?, ?, UTC_TIMESTAMP(6))`, [
       data.actorId, String(data.importId), JSON.stringify({ rowCount: data.rowCount }), data.ipAddress || null,
     ]);
   }

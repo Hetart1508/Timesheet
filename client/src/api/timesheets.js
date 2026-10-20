@@ -22,6 +22,9 @@ export const agentApi = {
     const { data } = await api.put(`/agent/timesheets/${id}`, { dailySummary });
     return data.data.timesheet;
   },
+  async deleteTimesheet(id) {
+    await api.delete(`/agent/timesheets/${id}`);
+  },
   async addVisit(timesheetId, visit) {
     const { data } = await api.post(`/agent/timesheets/${timesheetId}/visits`, visit);
     return data.data.timesheet;

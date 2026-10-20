@@ -87,6 +87,9 @@ describe('Admin review workflow', () => {
       { ipVersion: 'IPv6', status: 'ACTIVE' },
       { ipVersion: 'IPv4', status: 'REVOKED' },
     ]);
+    expect(result.sessions.map(({ ipAddress }) => ipAddress)).toEqual([
+      '203.0.113.8', '2001:db8::8', '192.0.2.7',
+    ]);
     expect(result.pagination).toEqual({ page: 1, pageSize: 10, total: 3 });
   });
 });

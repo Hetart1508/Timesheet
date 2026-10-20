@@ -71,8 +71,8 @@ export class ReportRepository {
   }
 
   async auditInvoice(actorId, invoice, ipAddress, connection = pool) {
-    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address)
-      VALUES (?, 'INVOICE_GENERATED', 'INVOICE', ?, ?, ?)`, [
+    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address, created_at)
+      VALUES (?, 'INVOICE_GENERATED', 'INVOICE', ?, ?, ?, UTC_TIMESTAMP(6))`, [
       actorId, `${invoice.agent.id}-${invoice.month}`,
       JSON.stringify({ agentId: invoice.agent.id, month: invoice.month, visitCount: invoice.items.length, totalAmount: invoice.totalAmount }),
       ipAddress || null,
@@ -80,7 +80,7 @@ export class ReportRepository {
   }
 
   async auditExport(actorId, format, filters, ipAddress, connection = pool) {
-    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address)
-      VALUES (?, ?, 'EXPORT', ?, ?, ?)`, [actorId, `EXPORT_${format.toUpperCase()}`, format, JSON.stringify({ filters }), ipAddress || null]);
+    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, after_data, ip_address, created_at)
+      VALUES (?, ?, 'EXPORT', ?, ?, ?, UTC_TIMESTAMP(6))`, [actorId, `EXPORT_${format.toUpperCase()}`, format, JSON.stringify({ filters }), ipAddress || null]);
   }
 }

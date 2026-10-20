@@ -20,6 +20,7 @@ export function createApp(options = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (env.TRUST_PROXY) app.set('trust proxy', 1);
+  else if (env.NODE_ENV !== 'production') app.set('trust proxy', 'loopback');
 
   app.use((req, res, next) => {
     req.id = req.get('x-request-id')?.slice(0, 100) || crypto.randomUUID();

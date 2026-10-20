@@ -132,6 +132,24 @@ export class TimesheetRepository {
     return { visitCount: Number(rows[0].visit_count) };
   }
 
+  async hasSubmissionHistory(id, connection) {
+    const [rows] = await connection.execute(
+      `SELECT (
+         EXISTS(SELECT 1 FROM timesheet_reviews WHERE timesheet_id = ?)
+         OR EXISTS(
+           SELECT 1 FROM audit_logs
+           WHERE entity_type = 'TIMESHEET' AND entity_id = ? AND action = 'TIMESHEET_SUBMITTED'
+         )
+       ) AS has_history`, [id, String(id)],
+    );
+    return Number(rows[0].has_history) > 0;
+  }
+
+  async deleteDraft(id, connection) {
+    await connection.execute('DELETE FROM visits WHERE timesheet_id = ?', [id]);
+    await connection.execute('DELETE FROM timesheets WHERE id = ?', [id]);
+  }
+
   async submit(id, status, connection) {
     await connection.execute(
       `UPDATE timesheets SET status = ?, submitted_at = UTC_TIMESTAMP(6), reviewed_at = NULL,
@@ -146,8 +164,8 @@ export class TimesheetRepository {
 
   async audit(data, connection) {
     await connection.execute(
-      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(6))`,
       [data.actorUserId, data.action, data.entityType, String(data.entityId), data.before ? JSON.stringify(data.before) : null, data.after ? JSON.stringify(data.after) : null, data.ipAddress || null],
     );
   }

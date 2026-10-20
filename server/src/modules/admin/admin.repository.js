@@ -113,8 +113,8 @@ export class AdminRepository {
   }
 
   async audit(data, connection) {
-    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`, [data.actorUserId, data.action, data.entityType, String(data.entityId), data.before ? JSON.stringify(data.before) : null, data.after ? JSON.stringify(data.after) : null, data.ipAddress || null]);
+    await connection.execute(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(6))`, [data.actorUserId, data.action, data.entityType, String(data.entityId), data.before ? JSON.stringify(data.before) : null, data.after ? JSON.stringify(data.after) : null, data.ipAddress || null]);
   }
 
   async listAudits(filters, connection = pool) {

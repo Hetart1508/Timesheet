@@ -7,6 +7,7 @@ import { createAuthenticate } from '../../middleware/authenticate.js';
 import { requireCsrf } from '../../middleware/csrf.js';
 import { validate } from '../../middleware/validate.js';
 import { asyncHandler } from '../../utils/async-handler.js';
+import { clientIpFromRequest } from '../../utils/ip-address.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 import {
   acceptAgentInvitationSchema, adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema, loginSchema, registrationSchema,
@@ -37,12 +38,12 @@ export function createAuthRouter(options = {}) {
   const router = Router();
 
   router.post('/register', publicLimiter, validate(registrationSchema), asyncHandler(async (req, res) => {
-    const result = await service.register(req.validated.body, { ip: req.ip });
+    const result = await service.register(req.validated.body, { ip: clientIpFromRequest(req) });
     res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Registration successful. Check your email to verify the account.' : 'Registration successful, but the verification email could not be delivered. Use resend verification.' });
   }));
 
   router.post('/register-admin', publicLimiter, validate(adminRegistrationSchema), asyncHandler(async (req, res) => {
-    const result = await service.registerAdmin(req.validated.body, { ip: req.ip });
+    const result = await service.registerAdmin(req.validated.body, { ip: clientIpFromRequest(req) });
     res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Admin account created. Check the Admin email for the verification code.' : 'Admin account created, but the verification email could not be delivered. Use resend verification.' });
   }));
 
@@ -62,7 +63,7 @@ export function createAuthRouter(options = {}) {
   }));
 
   router.post('/login', loginLimiter, validate(loginSchema), asyncHandler(async (req, res) => {
-    const result = await service.login(req.validated.body, { ip: req.ip, userAgent: req.get('user-agent') });
+    const result = await service.login(req.validated.body, { ip: clientIpFromRequest(req), userAgent: req.get('user-agent') });
     setSessionCookies(res, result);
     res.json({ success: true, data: { user: result.user, csrfToken: result.csrfToken }, message: 'Signed in successfully' });
   }));
@@ -73,7 +74,7 @@ export function createAuthRouter(options = {}) {
   }));
 
   router.post('/admin-login/verify', loginLimiter, validate(adminLoginVerifySchema), asyncHandler(async (req, res) => {
-    const result = await service.verifyAdminLogin(req.validated.body, { ip: req.ip, userAgent: req.get('user-agent') });
+    const result = await service.verifyAdminLogin(req.validated.body, { ip: clientIpFromRequest(req), userAgent: req.get('user-agent') });
     setSessionCookies(res, result);
     res.json({ success: true, data: { user: result.user, csrfToken: result.csrfToken }, message: 'Admin signed in successfully' });
   }));
@@ -101,7 +102,7 @@ export function createAuthRouter(options = {}) {
   });
 
   router.post('/workspace', authenticate, requireCsrf, validate(workspaceSchema), asyncHandler(async (req, res) => {
-    const user = await service.switchWorkspace(req.user, req.sessionId, req.validated.body.role, { ip: req.ip });
+    const user = await service.switchWorkspace(req.user, req.sessionId, req.validated.body.role, { ip: clientIpFromRequest(req) });
     res.json({ success: true, data: { user }, message: `${req.validated.body.role === 'ADMIN' ? 'Admin' : 'Agent'} workspace opened` });
   }));
 
@@ -117,7 +118,7 @@ export function createAuthRouter(options = {}) {
   }));
 
   router.post('/change-password', authenticate, requireCsrf, validate(changePasswordSchema), asyncHandler(async (req, res) => {
-    await service.changePassword(req.user, req.validated.body.currentPassword, req.validated.body.password, { ip: req.ip });
+    await service.changePassword(req.user, req.validated.body.currentPassword, req.validated.body.password, { ip: clientIpFromRequest(req) });
     clearSessionCookies(res);
     res.json({ success: true, data: null, message: 'Password changed. Sign in again on every device.' });
   }));

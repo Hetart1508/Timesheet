@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import argon2 from 'argon2';
 import { env } from '../../config/env.js';
 import { AppError } from '../../utils/app-error.js';
+import { normalizeIpAddress } from '../../utils/ip-address.js';
 import { hashToken, randomOtp, randomToken } from '../../utils/crypto.js';
 import { normalizeEmail, normalizeName, normalizeUsername } from '../../utils/normalize.js';
 import { signAccessToken } from './token.service.js';
@@ -126,7 +127,7 @@ export class AuthService {
       id: sessionId, userId: user.id, refreshTokenHash: hashToken(refreshToken),
       activeRole: 'AGENT',
       expiresAt: expiresIn(env.REFRESH_TOKEN_TTL_DAYS * 86_400_000),
-      ipAddress: request.ip, userAgent: request.userAgent?.slice(0, 255),
+      ipAddress: normalizeIpAddress(request.ip), userAgent: request.userAgent?.slice(0, 255),
     });
     await this.repository.touchLogin(user.id);
     return {
@@ -169,7 +170,7 @@ export class AuthService {
         id: sessionId, userId: admin.user_id, refreshTokenHash: hashToken(refreshToken),
         activeRole: 'ADMIN',
         expiresAt: expiresIn(env.REFRESH_TOKEN_TTL_DAYS * 86_400_000),
-        ipAddress: request.ip, userAgent: request.userAgent?.slice(0, 255),
+        ipAddress: normalizeIpAddress(request.ip), userAgent: request.userAgent?.slice(0, 255),
       }, connection);
       await this.repository.touchLogin(admin.user_id, connection);
       await this.repository.audit({

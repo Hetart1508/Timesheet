@@ -82,8 +82,8 @@ export class CompanyRepository {
 
   async audit(data, connection) {
     await connection.execute(
-      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address)
-       VALUES (?, ?, 'COMPANY', ?, ?, ?, ?)`,
+      `INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, before_data, after_data, ip_address, created_at)
+       VALUES (?, ?, 'COMPANY', ?, ?, ?, ?, UTC_TIMESTAMP(6))`,
       [data.userId, data.action || 'COMPANY_CREATED', String(data.companyId), data.before ? JSON.stringify(data.before) : null, JSON.stringify(data.after), data.ipAddress || null],
     );
   }

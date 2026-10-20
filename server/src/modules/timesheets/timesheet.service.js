@@ -124,6 +124,33 @@ export class TimesheetService {
     return this.get(timesheetId, agentId);
   }
 
+  async deleteDraft(id, agentId, request = {}) {
+    await this.repository.transaction(async (connection) => {
+      const timesheet = await this.repository.findOwned(id, agentId, connection, true);
+      if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
+      if (timesheet.status !== 'DRAFT') throw new AppError(409, 'TIMESHEET_DELETE_NOT_ALLOWED', 'Only draft timesheets can be deleted');
+      if (await this.repository.hasSubmissionHistory(id, connection)) {
+        throw new AppError(409, 'TIMESHEET_DELETE_NOT_ALLOWED', 'A timesheet that has been submitted or reviewed cannot be deleted');
+      }
+      const facts = await this.repository.submissionFacts(id, connection);
+      await this.repository.audit({
+        actorUserId: agentId,
+        action: 'TIMESHEET_DELETED',
+        entityType: 'TIMESHEET',
+        entityId: id,
+        before: {
+          workDate: dateOnly(timesheet.work_date),
+          dailySummary: timesheet.daily_summary || '',
+          status: timesheet.status,
+          visitCount: facts.visitCount,
+        },
+        after: { deleted: true },
+        ipAddress: request.ip,
+      }, connection);
+      await this.repository.deleteDraft(id, connection);
+    });
+  }
+
   async submit(id, user, request = {}) {
     const result = await this.repository.transaction(async (connection) => {
       const timesheet = await this.repository.findOwned(id, user.id, connection, true);

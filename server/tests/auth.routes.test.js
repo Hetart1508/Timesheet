@@ -37,11 +37,17 @@ describe('auth API contracts', () => {
   });
 
   it('sets HttpOnly session cookies and returns only user and CSRF data', async () => {
-    const response = await request(app).post('/api/v1/auth/login').send({ email: 'asha@example.com', password: 'correct horse battery' }).expect(200);
+    const response = await request(app).post('/api/v1/auth/login')
+      .set('CF-Connecting-IP', '2405:201:2019:6a:a91f:432e:a855:c445')
+      .send({ email: 'asha@example.com', password: 'correct horse battery' }).expect(200);
     expect(response.headers['set-cookie'].join(' ')).toContain('ts_access=access-token');
     expect(response.headers['set-cookie'].join(' ')).toContain('HttpOnly');
     expect(response.body.data).toEqual({ user: { id: 1, role: 'AGENT' }, csrfToken: 'csrf-token' });
     expect(response.body.data.accessToken).toBeUndefined();
+    expect(service.login).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'asha@example.com' }),
+      expect.objectContaining({ ip: '2405:201:2019:6a:a91f:432e:a855:c445' }),
+    );
   });
 
   it('accepts one-time Admin registration details without a client-selected role', async () => {

@@ -15,6 +15,8 @@ function makeRepository(overrides = {}) {
     reopenAfterEdit: vi.fn(),
     audit: vi.fn(),
     submissionFacts: vi.fn(async () => ({ visitCount: 1 })),
+    hasSubmissionHistory: vi.fn(async () => false),
+    deleteDraft: vi.fn(),
     submit: vi.fn(),
     adminRecipients: vi.fn(async () => []),
     detail: vi.fn(async () => ({
@@ -105,5 +107,32 @@ describe('Agent timesheet business rules', () => {
       statusCode: 409, code: 'TIMESHEET_NOT_DRAFT',
     });
     expect(repository.submit).not.toHaveBeenCalled();
+  });
+
+  it('deletes an unsubmitted draft and records an audit event', async () => {
+    const repository = makeRepository();
+    const service = new TimesheetService(repository, {});
+
+    await service.deleteDraft(7, 3, { ip: '127.0.0.1' });
+
+    expect(repository.deleteDraft).toHaveBeenCalledWith(7, expect.anything());
+    expect(repository.audit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'TIMESHEET_DELETED', actorUserId: 3,
+      before: expect.objectContaining({ visitCount: 1 }),
+    }), expect.anything());
+  });
+
+  it('protects non-drafts and drafts with submission history from deletion', async () => {
+    const submitted = makeRepository({ findOwned: vi.fn(async () => ({ id: 7, status: 'SUBMITTED' })) });
+    await expect(new TimesheetService(submitted, {}).deleteDraft(7, 3)).rejects.toMatchObject({
+      statusCode: 409, code: 'TIMESHEET_DELETE_NOT_ALLOWED',
+    });
+    expect(submitted.deleteDraft).not.toHaveBeenCalled();
+
+    const reviewed = makeRepository({ hasSubmissionHistory: vi.fn(async () => true) });
+    await expect(new TimesheetService(reviewed, {}).deleteDraft(7, 3)).rejects.toMatchObject({
+      statusCode: 409, code: 'TIMESHEET_DELETE_NOT_ALLOWED',
+    });
+    expect(reviewed.deleteDraft).not.toHaveBeenCalled();
   });
 });

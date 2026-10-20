@@ -7,6 +7,7 @@ import { agentApi } from '../../api/timesheets.js';
 vi.mock('../../api/timesheets.js', () => ({
   agentApi: {
     getTimesheet: vi.fn(), listCompanies: vi.fn(), addVisit: vi.fn(), updateVisit: vi.fn(),
+    deleteTimesheet: vi.fn(),
   },
   formatDuration: ({ minutes = 0 } = {}) => `${minutes} min`,
   formatWorkDate: (value) => value,
@@ -25,6 +26,17 @@ beforeEach(() => {
 });
 
 describe('Timesheet company search', () => {
+  it('lets an Agent confirm and delete a draft', async () => {
+    agentApi.deleteTimesheet.mockResolvedValue();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<MemoryRouter initialEntries={['/timesheets/5']}><Routes><Route path="/timesheets/:id" element={<TimesheetPage />} /><Route path="/timesheets" element={<div>Timesheet history</div>} /></Routes></MemoryRouter>);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete draft' }));
+
+    await waitFor(() => expect(agentApi.deleteTimesheet).toHaveBeenCalledWith('5'));
+    expect(await screen.findByText('Timesheet history')).toBeInTheDocument();
+  });
+
   it('disables submission until a non-draft timesheet is edited', async () => {
     agentApi.getTimesheet.mockResolvedValue({
       id: 5, workDate: '2026-10-16', status: 'SUBMITTED',

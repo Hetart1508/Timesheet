@@ -188,6 +188,8 @@ button { cursor: pointer; }
 .form-help { color: var(--muted); font-size: .86rem; line-height: 1.55; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
 .split-actions { justify-content: space-between; }
+.delete-draft-button { margin-right: auto; color: var(--danger); border-color: #fecdd3; }
+.delete-draft-button:hover { color: var(--danger); background: var(--danger-soft); border-color: #fda4af; }
 .company-picker { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px; }
 .search-control { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .search-control .secondary-button { min-height: 47px; }
@@ -292,9 +294,20 @@ button { cursor: pointer; }
 .audit-data-table { min-width: 760px; }
 .audit-row-details > summary { color: var(--primary-dark); cursor: pointer; font-size: .78rem; font-weight: 700; white-space: nowrap; }
 .audit-row-details[open] { position: relative; z-index: 2; }
-.audit-row-details .audit-detail { min-width: 460px; padding: 10px; background: #f8fafc; border: 1px solid var(--border); border-radius: 7px; }
-.audit-row-details .audit-detail pre { max-width: 230px; }
-.audit-row-details .audit-detail > small { grid-column: 1 / -1; color: var(--muted); }
+.audit-row-details .audit-detail { display: block; min-width: 600px; padding: 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 7px; }
+.audit-row-details .audit-detail > small { display: block; margin-top: 10px; color: var(--muted); }
+.audit-change-summary h4 { margin: 0 0 9px; color: #202124; font-size: .84rem; }
+.audit-change-summary dl { margin: 0; }
+.audit-change-head, .audit-change-row { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(145px, 1fr) minmax(145px, 1fr); }
+.audit-change-head { color: #6b7280; background: #eef1f5; border: 1px solid #dce1e8; border-radius: 6px 6px 0 0; font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.audit-change-head span, .audit-change-row > * { padding: 8px 10px; }
+.audit-change-head span + span, .audit-change-row > * + * { border-left: 1px solid #e1e5eb; }
+.audit-change-row { background: #fff; border: 1px solid #e1e5eb; border-top: 0; }
+.audit-change-row:last-child { border-radius: 0 0 6px 6px; }
+.audit-change-row dt { color: #4b5563; font-size: .75rem; font-weight: 700; }
+.audit-change-row dd { margin: 0; color: #1f2937; font-size: .76rem; overflow-wrap: anywhere; }
+.audit-change-row dd > span { display: none; }
+.audit-no-details { margin: 0; color: var(--muted); font-size: .78rem; }
 .table-pagination { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 14px; color: #5f6368; border-top: 1px solid #e6e3dc; font-size: .78rem; }
 .table-pagination-controls { display: flex; align-items: center; gap: 14px; }
 .table-pagination-controls > label { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -701,7 +714,13 @@ a { color: #2875d1; }
   .data-table .table-action, .data-table .table-danger { width: fit-content; }
   .audit-row-details, .audit-row-details .audit-detail { width: 100%; min-width: 0; }
   .audit-row-details .audit-detail { grid-template-columns: 1fr; }
-  .audit-row-details .audit-detail pre { width: 100%; max-width: 100%; overflow-wrap: anywhere; }
+  .audit-change-head { display: none; }
+  .audit-change-row { grid-template-columns: 1fr 1fr; padding: 9px 10px; border-top: 1px solid #e1e5eb; border-radius: 0; }
+  .audit-change-row:first-child { border-radius: 6px 6px 0 0; }
+  .audit-change-row dt { grid-column: 1 / -1; padding: 0 0 7px; }
+  .audit-change-row dd { padding: 0; border-left: 0; }
+  .audit-change-row dd + dd { padding-left: 10px; border-left: 1px solid #e1e5eb; }
+  .audit-change-row dd > span { display: block; margin-bottom: 3px; color: var(--muted); font-size: .63rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
   .work-calendar-scroll { overflow: visible; border: 0; }
   .work-calendar-grid { display: block; width: 100%; min-width: 0; }
   .work-calendar-grid thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); }
