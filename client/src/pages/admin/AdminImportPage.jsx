@@ -6,7 +6,6 @@ import RequestState from '../../components/common/RequestState.jsx';
 import { adminApi } from '../../api/admin.js';
 import { errorMessage } from '../../api/client.js';
 import { formatBusinessDateTime } from '../../utils/business-time.js';
-import AgentImportPanel from './AgentImportPanel.jsx';
 
 const saveBlob = (response, fileName) => {
   const url = URL.createObjectURL(response.data);
@@ -22,7 +21,6 @@ export default function AdminImportPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [busy, setBusy] = useState('');
-  const [mode, setMode] = useState('timesheets');
   const loadHistory = () => adminApi.importHistory().then(setHistory).catch((err) => setError(errorMessage(err)));
   useEffect(() => { loadHistory(); }, []);
 
@@ -48,9 +46,7 @@ export default function AdminImportPage() {
   };
 
   return <AppShell>
-    <section className="workspace-heading"><p className="eyebrow">Database tools</p><h1>Excel data import</h1><p>Import historical work or invite Agents to set up their accounts.</p></section>
-    <div className="tab-bar" role="tablist" aria-label="Excel import type"><button type="button" role="tab" aria-selected={mode === 'timesheets'} className={mode === 'timesheets' ? 'active' : ''} onClick={() => setMode('timesheets')}>Timesheet visits</button><button type="button" role="tab" aria-selected={mode === 'agents'} className={mode === 'agents' ? 'active' : ''} onClick={() => setMode('agents')}>Invite Agents</button></div>
-    {mode === 'agents' ? <AgentImportPanel /> : <>
+    <section className="workspace-heading"><p className="eyebrow">Database tools</p><h1>Excel data import</h1><p>Import historical timesheet visits for agents already managed in the Admin directory.</p></section>
     <Alert>{error}</Alert><Alert type="success">{success}</Alert>
     <section className="content-card section-block import-guide"><div className="section-heading"><div><p className="eyebrow">Step 1</p><h2>Prepare the workbook</h2></div><button className="secondary-button" type="button" disabled={Boolean(busy)} onClick={downloadTemplate}><Download size={17} /> {busy === 'template' ? 'Preparing…' : 'Download template'}</button></div>
       <p>Use one row per visit. Agent accounts must already exist. Missing companies are created when their address is supplied.</p>
@@ -66,6 +62,5 @@ export default function AdminImportPage() {
       <div className="import-commit"><p>{preview.summary.errorRows ? 'Correct every invalid row and preview the file again.' : `${preview.summary.companiesToCreate} new companies will be created. The import will run as one database transaction.`}</p><button className="primary-button" type="button" disabled={Boolean(busy) || preview.summary.errorRows > 0} onClick={importFile}>{busy === 'import' ? 'Importing…' : 'Import into database'}</button></div>
     </section> : null}
     <section className="content-card section-block"><div className="section-heading"><div><p className="eyebrow">Audit trail</p><h2>Recent imports</h2></div></div>{!history ? <RequestState label="Loading import history…" onRetry={loadHistory} /> : history.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>File</th><th>Imported by</th><th>Imported</th><th>Timesheets</th><th>Visits</th><th>Companies</th></tr></thead><tbody>{history.map((item) => <tr key={item.id}><td data-label="File"><strong>{item.fileName}</strong><small>Import #{item.id}</small></td><td data-label="Imported by">{item.importedBy}</td><td data-label="Imported">{formatBusinessDateTime(item.createdAt)}</td><td data-label="Timesheets">{item.timesheetCount}</td><td data-label="Visits">{item.visitCount}</td><td data-label="Companies">{item.companyCount}</td></tr>)}</tbody></table></div> : <div className="empty-state"><FileSpreadsheet /><h3>No imports yet</h3><p>Completed Excel imports will appear here.</p></div>}</section>
-    </>}
   </AppShell>;
 }

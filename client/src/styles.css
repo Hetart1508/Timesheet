@@ -176,16 +176,6 @@ button { cursor: pointer; }
 .detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
 .detail-heading .status-badge { margin-top: 8px; }
 .business-form { display: grid; gap: 17px; }
-.voice-textarea { display: grid; gap: 5px; }
-.voice-textarea-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 7px; }
-.field .voice-language { width: auto; min-width: 118px; min-height: 34px; padding: 5px 28px 5px 9px; border-radius: 999px; font-size: .78rem; }
-.voice-button { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 5px 11px; color: var(--primary-dark); background: var(--primary-soft); border: 1px solid #c7ddfa; border-radius: 999px; font-size: .78rem; font-weight: 750; }
-.voice-button:hover { background: #dcecff; }
-.voice-button.listening { color: #fff; background: var(--danger); border-color: var(--danger); }
-.voice-button.listening svg { fill: currentColor; }
-.voice-error, .voice-listening { justify-self: end; font-size: .72rem; font-weight: 600; }
-.voice-error { color: var(--danger) !important; }
-.voice-listening { color: var(--primary-dark) !important; }
 .form-help { color: var(--muted); font-size: .86rem; line-height: 1.55; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
 .split-actions { justify-content: space-between; }
@@ -809,8 +799,6 @@ a { color: #2875d1; }
   .workspace-heading > p:last-child, .dashboard-hero p:last-child, .detail-heading p:last-child { margin-top: 4px; line-height: 1.4; }
   .field { gap: 4px; }
   .field input, .field select, .field textarea, .filter-bar input, .filter-bar select { min-height: 44px; padding-block: 8px; font-size: 16px; }
-  .field .voice-language { min-width: 112px; min-height: 40px; padding-block: 6px; font-size: .8rem; }
-  .voice-button { min-height: 40px; font-size: .8rem; }
   .primary-button, .secondary-button { min-height: 44px; }
   .business-form { gap: 10px; }
   .form-actions { gap: 7px; }

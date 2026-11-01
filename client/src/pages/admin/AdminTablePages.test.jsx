@@ -154,7 +154,7 @@ describe('admin list table controls', () => {
 
   it('automatically searches the Agent directory and Company list', async () => {
     const { unmount } = render(<MemoryRouter><AdminAgentsPage /></MemoryRouter>);
-    await screen.findByText('@taylor');
+    await screen.findByText('Taylor Agent');
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search agents' }), { target: { value: 'Taylor' } });
     await waitFor(() => expect(adminApi.listAgents).toHaveBeenLastCalledWith({ search: 'Taylor', pageSize: 100 }));
 

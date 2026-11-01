@@ -62,7 +62,7 @@ export default function AdminRegisterPage() {
     </form> : null}
     {step === 'verify' ? <form className="auth-form" onSubmit={verify}>
       <Alert type="success">{message}</Alert>
-      <FormField label="Six-digit verification code" name="admin-registration-otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength="6" required value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+      <FormField label="Six-digit verification code" name="admin-registration-otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength="6" autoFocus required value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} />
       <button className="primary-button" disabled={submitting || otp.length !== 6}>{submitting ? 'Verifying…' : 'Verify Admin email'}</button>
       <button className="text-button" type="button" disabled={submitting} onClick={resend}>Send a new code</button>
     </form> : null}

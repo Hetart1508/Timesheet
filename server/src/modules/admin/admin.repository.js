@@ -5,7 +5,7 @@ export class AdminRepository {
 
   async dashboard(workDate, connection = pool) {
     const [[agents], [activity], [visits], [pending], [queue]] = await Promise.all([
-      connection.execute("SELECT COUNT(*) total FROM users WHERE role IN ('ADMIN', 'AGENT') AND status = 'ACTIVE'"),
+      connection.execute("SELECT COUNT(*) total FROM users WHERE role IN ('ADMIN', 'AGENT') AND status = 'ACTIVE' AND deleted_at IS NULL"),
       connection.execute('SELECT COUNT(DISTINCT agent_id) total FROM timesheets WHERE work_date = ?', [workDate]),
       connection.execute('SELECT COUNT(*) visits, COALESCE(SUM(TIMESTAMPDIFF(MINUTE, check_in_at, check_out_at)), 0) minutes FROM visits WHERE deleted_at IS NULL'),
       connection.execute("SELECT COUNT(*) total FROM timesheets WHERE status = 'SUBMITTED'"),
@@ -47,7 +47,7 @@ export class AdminRepository {
       FROM users u
       LEFT JOIN timesheets t ON t.agent_id = u.id AND t.status = 'APPROVED' AND t.work_date BETWEEN ? AND ?
       LEFT JOIN visits v ON v.timesheet_id = t.id AND v.deleted_at IS NULL
-      WHERE u.role IN ('ADMIN', 'AGENT') ${agentFilter}
+      WHERE u.role IN ('ADMIN', 'AGENT') AND u.deleted_at IS NULL ${agentFilter}
       GROUP BY u.id, u.full_name, u.status, t.work_date
       ORDER BY u.full_name, t.work_date`, values);
     return rows;
@@ -71,7 +71,7 @@ export class AdminRepository {
   }
 
   async listAgents(filters, connection = pool) {
-    const where = ["u.role IN ('ADMIN', 'AGENT')"]; const values = [];
+    const where = ["u.role IN ('ADMIN', 'AGENT')", 'u.deleted_at IS NULL']; const values = [];
     if (filters.search) { where.push('(u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)'); const q = `%${filters.search}%`; values.push(q, q, q); }
     if (filters.status) { where.push('u.status = ?'); values.push(filters.status); }
     const offset = (filters.page - 1) * filters.pageSize;
@@ -85,11 +85,62 @@ export class AdminRepository {
   }
 
   async setAgentStatus(id, status, connection) {
-    const [rows] = await connection.execute("SELECT id, full_name, status FROM users WHERE id = ? AND role = 'AGENT' FOR UPDATE", [id]);
+    const [rows] = await connection.execute("SELECT id, full_name, status FROM users WHERE id = ? AND role = 'AGENT' AND deleted_at IS NULL FOR UPDATE", [id]);
     if (!rows[0]) return null;
     await connection.execute('UPDATE users SET status = ? WHERE id = ?', [status, id]);
     if (status === 'INACTIVE') await connection.execute('UPDATE auth_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE user_id = ? AND revoked_at IS NULL', [id]);
     return rows[0];
+  }
+
+  async createAgent(data, connection) {
+    const [result] = await connection.execute(
+      `INSERT INTO users (full_name, username, username_normalized, email, email_normalized, password_hash, role, is_email_verified, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'AGENT', TRUE, ?)`,
+      [data.fullName, data.username, data.usernameNormalized, data.email, data.emailNormalized, data.passwordHash, data.status],
+    );
+    return result.insertId;
+  }
+
+  async findAgent(id, connection = pool, lock = false) {
+    const [rows] = await connection.execute(`SELECT * FROM users WHERE id = ? AND role = 'AGENT' AND deleted_at IS NULL${lock ? ' FOR UPDATE' : ''}`, [id]);
+    return rows[0] || null;
+  }
+
+  async updateAgent(id, data, connection) {
+    const before = await this.findAgent(id, connection, true);
+    if (!before) return null;
+    await connection.execute(
+      'UPDATE users SET full_name = ?, email = ?, email_normalized = ?, status = ? WHERE id = ?',
+      [data.fullName, data.email, data.emailNormalized, data.status, id],
+    );
+    if (data.status === 'INACTIVE') await connection.execute('UPDATE auth_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE user_id = ? AND revoked_at IS NULL', [id]);
+    return before;
+  }
+
+  async deleteAgent(id, connection) {
+    const before = await this.findAgent(id, connection, true);
+    if (!before) return null;
+    const [counts] = await connection.execute('SELECT COUNT(*) total FROM timesheets WHERE agent_id = ?', [id]);
+    await connection.execute("UPDATE users SET status = 'INACTIVE', deleted_at = UTC_TIMESTAMP(6) WHERE id = ?", [id]);
+    await connection.execute('UPDATE auth_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE user_id = ? AND revoked_at IS NULL', [id]);
+    return { ...before, historyPreserved: Number(counts[0].total) > 0 };
+  }
+
+  async confirmationFacts(id, connection) {
+    const [rows] = await connection.execute(`SELECT t.*, u.full_name agent_name, u.email agent_email,
+      (SELECT COUNT(*) FROM visits v WHERE v.timesheet_id = t.id AND v.deleted_at IS NULL) visit_count
+      FROM timesheets t JOIN users u ON u.id = t.agent_id WHERE t.id = ? FOR UPDATE`, [id]);
+    return rows[0] || null;
+  }
+
+  async createConfirmation(id, requestedBy, tokenHash, expiresAt, connection) {
+    await connection.execute('UPDATE timesheet_confirmation_requests SET expires_at = UTC_TIMESTAMP(6) WHERE timesheet_id = ? AND responded_at IS NULL', [id]);
+    const [result] = await connection.execute(
+      'INSERT INTO timesheet_confirmation_requests (timesheet_id, requested_by, token_hash, expires_at) VALUES (?, ?, ?, ?)',
+      [id, requestedBy, tokenHash, expiresAt],
+    );
+    await connection.execute(`UPDATE timesheets SET status = 'SUBMITTED', submitted_at = UTC_TIMESTAMP(6), reviewed_by = NULL, reviewed_at = NULL, review_comment = NULL WHERE id = ?`, [id]);
+    return result.insertId;
   }
 
   async listCompanies(filters, connection = pool) {

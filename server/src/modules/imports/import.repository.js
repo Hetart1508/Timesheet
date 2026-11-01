@@ -6,7 +6,7 @@ export class ImportRepository {
   async findAgentsByEmails(emails, connection = pool) {
     if (!emails.length) return [];
     const placeholders = emails.map(() => '?').join(',');
-    const [rows] = await connection.execute(`SELECT id, full_name, email_normalized, status FROM users WHERE role = 'AGENT' AND email_normalized IN (${placeholders})`, emails);
+    const [rows] = await connection.execute(`SELECT id, full_name, email_normalized, status FROM users WHERE role = 'AGENT' AND deleted_at IS NULL AND email_normalized IN (${placeholders})`, emails);
     return rows;
   }
 

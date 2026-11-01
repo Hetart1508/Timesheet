@@ -10,8 +10,8 @@ import { asyncHandler } from '../../utils/async-handler.js';
 import { clientIpFromRequest } from '../../utils/ip-address.js';
 import { clearSessionCookies, setSessionCookies } from './cookies.js';
 import {
-  acceptAgentInvitationSchema, adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema, loginSchema, registrationSchema,
-  resetPasswordSchema, verifyOtpSchema, workspaceSchema,
+  adminLoginRequestSchema, adminLoginVerifySchema, adminRegistrationSchema, changePasswordSchema, emailSchema,
+  resetPasswordSchema, verifyOtpSchema,
 } from './auth.schemas.js';
 
 const publicLimiter = rateLimit({
@@ -37,19 +37,9 @@ export function createAuthRouter(options = {}) {
   const authenticate = options.authenticate || createAuthenticate(repository);
   const router = Router();
 
-  router.post('/register', publicLimiter, validate(registrationSchema), asyncHandler(async (req, res) => {
-    const result = await service.register(req.validated.body, { ip: clientIpFromRequest(req) });
-    res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Registration successful. Check your email to verify the account.' : 'Registration successful, but the verification email could not be delivered. Use resend verification.' });
-  }));
-
   router.post('/register-admin', publicLimiter, validate(adminRegistrationSchema), asyncHandler(async (req, res) => {
     const result = await service.registerAdmin(req.validated.body, { ip: clientIpFromRequest(req) });
     res.status(201).json({ success: true, data: result, message: result.delivery === 'SENT' ? 'Admin account created. Check the Admin email for the verification code.' : 'Admin account created, but the verification email could not be delivered. Use resend verification.' });
-  }));
-
-  router.post('/accept-invitation', publicLimiter, validate(acceptAgentInvitationSchema), asyncHandler(async (req, res) => {
-    const result = await service.acceptAgentInvitation(req.validated.body);
-    res.json({ success: true, data: result, message: 'Agent account set up successfully. You can now sign in.' });
   }));
 
   router.post('/verify-email', publicLimiter, validate(verifyOtpSchema), asyncHandler(async (req, res) => {
@@ -60,12 +50,6 @@ export function createAuthRouter(options = {}) {
   router.post('/resend-verification', publicLimiter, validate(emailSchema), asyncHandler(async (req, res) => {
     await service.resendVerification(req.validated.body.email);
     res.json({ success: true, data: null, message: 'If the account is eligible, a verification email will be sent.' });
-  }));
-
-  router.post('/login', loginLimiter, validate(loginSchema), asyncHandler(async (req, res) => {
-    const result = await service.login(req.validated.body, { ip: clientIpFromRequest(req), userAgent: req.get('user-agent') });
-    setSessionCookies(res, result);
-    res.json({ success: true, data: { user: result.user, csrfToken: result.csrfToken }, message: 'Signed in successfully' });
   }));
 
   router.post('/admin-login/request', loginLimiter, validate(adminLoginRequestSchema), asyncHandler(async (req, res) => {
@@ -100,11 +84,6 @@ export function createAuthRouter(options = {}) {
   router.get('/me', authenticate, (req, res) => {
     res.json({ success: true, data: { user: req.user }, message: 'Authenticated user loaded' });
   });
-
-  router.post('/workspace', authenticate, requireCsrf, validate(workspaceSchema), asyncHandler(async (req, res) => {
-    const user = await service.switchWorkspace(req.user, req.sessionId, req.validated.body.role, { ip: clientIpFromRequest(req) });
-    res.json({ success: true, data: { user }, message: `${req.validated.body.role === 'ADMIN' ? 'Admin' : 'Agent'} workspace opened` });
-  }));
 
   router.post('/forgot-password', publicLimiter, validate(emailSchema), asyncHandler(async (req, res) => {
     await service.forgotPassword(req.validated.body.email);

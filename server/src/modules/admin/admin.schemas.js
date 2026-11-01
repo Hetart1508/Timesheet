@@ -23,7 +23,19 @@ export const reviewSchema = envelope({ params: z.object({ id }), body: z.object(
   if (value.decision !== 'APPROVED' && value.comment.length < 5) context.addIssue({ code: 'custom', path: ['comment'], message: 'Enter at least 5 characters explaining the decision' });
 }) });
 export const agentListSchema = envelope({ query: z.object({ search: z.string().trim().max(100).default(''), status: z.enum(['ACTIVE', 'INACTIVE']).optional(), ...paging }) });
+export const agentCreateSchema = envelope({ body: z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(254),
+  status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+}).strict() });
+export const agentUpdateSchema = envelope({ params: z.object({ id }), body: z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(254),
+  status: z.enum(['ACTIVE', 'INACTIVE']),
+}).strict() });
 export const agentStatusSchema = envelope({ params: z.object({ id }), body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE']) }).strict() });
+export const adminCreateTimesheetSchema = envelope({ body: z.object({ agentId: id, workDate: date }).strict() });
+export const confirmationRequestSchema = envelope({ params: z.object({ id }) });
 export const companyAdminListSchema = envelope({ query: z.object({ search: z.string().trim().max(100).default(''), reviewStatus: z.enum(['APPROVED', 'PENDING']).optional(), status: z.enum(['ACTIVE', 'INACTIVE']).optional(), ...paging }) });
 export const companyAdminUpdateSchema = envelope({ params: z.object({ id }), body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE']).optional(), reviewStatus: z.enum(['APPROVED', 'PENDING']).optional() }).refine((value) => value.status || value.reviewStatus, 'Provide a status to update') });
 export const auditListSchema = envelope({ query: z.object({

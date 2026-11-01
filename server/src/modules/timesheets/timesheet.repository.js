@@ -19,6 +19,16 @@ export class TimesheetRepository {
     return rows[0] || null;
   }
 
+  async findById(id, connection = pool) {
+    const [rows] = await connection.execute('SELECT * FROM timesheets WHERE id = ?', [id]);
+    return rows[0] || null;
+  }
+
+  async findActiveAgent(id, connection = pool) {
+    const [rows] = await connection.execute("SELECT id FROM users WHERE id = ? AND role = 'AGENT' AND status = 'ACTIVE' AND deleted_at IS NULL", [id]);
+    return rows[0] || null;
+  }
+
   async detail(id, agentId, connection = pool) {
     const timesheet = await this.findOwned(id, agentId, connection);
     if (!timesheet) return null;
@@ -133,6 +143,7 @@ export class TimesheetRepository {
       `UPDATE timesheets SET status = 'DRAFT', submitted_at = NULL, reviewed_by = NULL,
        reviewed_at = NULL, review_comment = NULL WHERE id = ?`, [timesheet.id],
     );
+    await connection.execute('UPDATE timesheet_confirmation_requests SET expires_at = UTC_TIMESTAMP(6) WHERE timesheet_id = ? AND responded_at IS NULL', [timesheet.id]);
   }
 
   async submissionFacts(id, connection) {

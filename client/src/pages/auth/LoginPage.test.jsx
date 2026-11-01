@@ -45,6 +45,20 @@ describe('Agent sign-in verification flow', () => {
     expect(screen.queryByRole('link', { name: /agent sign in/i })).not.toBeInTheDocument();
   });
 
+  it('focuses the Admin OTP field when the security-code step opens', async () => {
+    requestAdminLogin.mockResolvedValueOnce({ challengeId: 'challenge-id', expiresInMinutes: 10 });
+    render(<MemoryRouter><AdminLoginPage /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText('Admin email'), { target: { value: 'admin@example.com' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'admin-password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Continue and send code' }));
+    expect(await screen.findByLabelText(/Six-digit security code/)).toHaveFocus();
+  });
+
+  it('focuses the OTP field when the standalone verification page opens', () => {
+    render(<MemoryRouter initialEntries={['/verify-email?email=admin@example.com']}><VerifyEmailPage /></MemoryRouter>);
+    expect(screen.getByLabelText('Six-digit code')).toHaveFocus();
+  });
+
   it('returns Admin password recovery to the Admin portal', () => {
     render(<MemoryRouter initialEntries={['/forgot-password?portal=admin']}><RequestEmailPage mode="reset" /></MemoryRouter>);
 

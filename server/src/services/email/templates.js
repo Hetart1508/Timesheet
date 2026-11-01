@@ -76,4 +76,11 @@ export const templates = {
       html: layout('Timesheet review completed', `<p>Hello ${escapeHtml(agentName)},</p><p style="line-height:1.7">Your timesheet for <strong>${escapeHtml(workDate)}</strong> was <strong>${escapeHtml(label)}</strong>.</p>${comment ? `<p style="line-height:1.7"><strong>Reviewer comments:</strong> ${escapeHtml(comment)}</p>` : ''}`, actionButton('View timesheet', url)),
     };
   },
+  timesheetConfirmation({ agentName, workDate, yesUrl, noUrl }) {
+    return {
+      subject: `Please confirm your timesheet for ${workDate}`,
+      text: `Hello ${agentName},\n\nThe Admin prepared your timesheet for ${workDate}. Confirm whether it is correct.\n\nYes, it is correct: ${yesUrl}\n\nNo, it needs correction: ${noUrl}\n\nThese links expire in 7 days.`,
+      html: layout('Is this timesheet correct?', `<p>Hello ${escapeHtml(agentName)},</p><p style="line-height:1.7">The Admin prepared your timesheet for <strong>${escapeHtml(workDate)}</strong>. Please review and confirm whether it is correct.</p>`, `<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="padding-right:10px">${actionButton('Yes, it is correct', yesUrl)}</td><td>${actionButton('No, it needs correction', noUrl)}</td></tr></table><p style="color:#6b7280;font-size:13px">The confirmation link expires in 7 days.</p>`),
+    };
+  },
 };

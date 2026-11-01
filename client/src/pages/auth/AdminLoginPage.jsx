@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
     </form> : <form className="auth-form" onSubmit={verifyCode}>
       <Alert>{error}</Alert><Alert type="success">{message}</Alert>
       <FormField label="Admin email" name="admin-email-confirmation" type="email" value={credentials.email} readOnly />
-      <FormField label="Six-digit security code" name="admin-otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength="6" required value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} hint="The code can be used once." />
+      <FormField label="Six-digit security code" name="admin-otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength="6" autoFocus required value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} hint="The code can be used once." />
       <button className="primary-button" disabled={submitting || otp.length !== 6}>{submitting ? 'Verifying…' : 'Verify and sign in'}</button>
       <div className="admin-login-actions"><button type="button" className="text-button" onClick={requestCode} disabled={submitting}>Send a new code</button><button type="button" className="text-button" onClick={startOver} disabled={submitting}>Use another account</button></div>
     </form>}

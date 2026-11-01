@@ -55,10 +55,9 @@ describe('AppShell mobile navigation', () => {
     expect(screen.getByRole('link', { name: 'Temporary' })).toHaveAttribute('href', '/admin/temporary');
   });
 
-  it('lets an Admin switch to the Agent workspace from the navigation', async () => {
-    switchWorkspace.mockResolvedValueOnce({ role: 'AGENT', accountRole: 'ADMIN' });
+  it('keeps timesheet entry inside the Admin workspace', async () => {
     render(<MemoryRouter><AppShell><h1>Workspace</h1></AppShell></MemoryRouter>);
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to Agent workspace' }));
-    expect(switchWorkspace).toHaveBeenCalledWith('AGENT');
+    expect(screen.queryByRole('button', { name: /Switch to Agent workspace/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Agents' })).toHaveAttribute('href', '/admin/agents');
   });
 });

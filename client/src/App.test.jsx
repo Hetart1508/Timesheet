@@ -18,21 +18,16 @@ vi.mock('./context/AuthContext.jsx', () => ({
 afterEach(cleanup);
 
 describe('authentication pages', () => {
-  it('uses one mobile-friendly sign-in entry point', () => {
+  it('uses the Admin sign-in as the only sign-in entry point', () => {
     render(<MemoryRouter initialEntries={['/login']}><App /></MemoryRouter>);
-    expect(screen.getByRole('heading', { name: 'Choose your workspace' }).closest('main')).toHaveClass('auth-page-compact');
+    expect(screen.getByRole('heading', { name: 'Admin sign in' }).closest('main')).toHaveClass('auth-page-compact');
     expect(document.documentElement).toHaveClass('compact-auth-active');
-    expect(screen.getByRole('link', { name: /Agent sign in/ })).toHaveAttribute('href', '/login/agent');
-    expect(screen.getByRole('link', { name: /Admin sign in/ })).toHaveAttribute('href', '/login/admin');
+    expect(screen.queryByRole('link', { name: /Agent sign in/ })).not.toBeInTheDocument();
   });
 
-  it('renders the sign-in workflow', async () => {
+  it('does not expose the retired Agent sign-in workflow', async () => {
     render(<MemoryRouter initialEntries={['/login/agent']}><App /></MemoryRouter>);
-    expect(screen.getByRole('heading', { name: 'Agent sign in' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Agent sign in' }).closest('main')).toHaveClass('auth-page-compact');
-    expect(screen.getByLabelText('Agent email')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Create an account' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Use secure Admin sign in' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
   });
 
   it('renders the protected Admin sign-in workflow', async () => {

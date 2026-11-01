@@ -36,11 +36,9 @@ All paths below are under `/api/v1/auth`.
 
 | Method | Path | Access | Description |
 | --- | --- | --- | --- |
-| POST | `/register` | Public, rate-limited | Creates an Agent account and sends a verification code. The role is never accepted from the client. |
 | POST | `/register-admin` | Public, rate-limited | Creates the system’s only Admin account and sends an email verification code. Database constraints reject a second Admin. |
 | POST | `/verify-email` | Public, rate-limited | Verifies `{ "email": "agent@example.com", "otp": "123456" }`. |
 | POST | `/resend-verification` | Public, rate-limited | Sends a replacement code when the account is eligible. |
-| POST | `/login` | Public, rate-limited | Agent-only login using verified email and password; sets session cookies. Admin accounts are rejected. |
 | POST | `/admin-login/request` | Public, rate-limited | Validates Admin email/password and emails a single-use OTP; does not create a session. |
 | POST | `/admin-login/verify` | Public, rate-limited | Validates the Admin login challenge, email, and OTP; consumes the OTP and creates the Admin session. |
 | POST | `/refresh` | Refresh cookie + CSRF | Rotates the refresh session and access cookie. |
@@ -53,23 +51,9 @@ All paths below are under `/api/v1/auth`.
 
 Verification codes are single-use, expire after 10 minutes by default, are stored as SHA-256 hashes, and are locked after five incorrect attempts by default. Login and refresh set `ts_access` and `ts_refresh` as HttpOnly cookies and `ts_csrf` as a readable cookie. Authenticated state-changing requests must echo the CSRF cookie in `X-CSRF-Token`; the bundled Axios client does this. JWTs and refresh tokens are not returned in JSON or browser storage.
 
-## Agent timesheets
+## Agent confirmation
 
-All routes are under `/api/v1/agent` and require an active Agent session. A daily sheet is unique per Agent and work date. Create or open a selected date with `POST /timesheets` and `{ "workDate": "YYYY-MM-DD" }`; omit `workDate` to use the current business date. Future dates are rejected. Repeating the request for an existing date returns that day’s sheet.
-
-| Method | Path | Access | Description |
-| --- | --- | --- | --- |
-| GET | `/dashboard` | Agent | Current business date, today’s sheet summary, and recent sheets. |
-| GET | `/timesheets` | Agent | History supports `search`, `startDate`, `endDate`, `status`, `sortBy` (`workDate`, `visitCount`, `duration`, or `status`), `sortOrder`, `page`, and `pageSize` (maximum 50). Search covers sheet text and visit/company details. |
-| POST | `/timesheets` | Agent + CSRF | Create or open the daily sheet for optional `workDate`. |
-| GET | `/timesheets/:id` | Owning Agent | Sheet declaration, visits, and review details. |
-| PUT | `/timesheets/:id` | Owning Agent + CSRF | Save `{ "dailySummary": "..." }`. |
-| POST | `/timesheets/:id/visits` | Owning Agent + CSRF | Add a company visit with company, category (`Gold`, `Silver`, or `Bronze`), contact, purpose, notes, and `checkInTime` / `checkOutTime` in IST (`HH:mm`). |
-| PUT | `/visits/:id` | Owning Agent + CSRF | Edit a visit. |
-| DELETE | `/visits/:id` | Owning Agent + CSRF | Soft-delete a visit. |
-| POST | `/timesheets/:id/submit` | Owning Agent + CSRF | Submit the daily sheet for review. |
-
-Each visit is stored against the selected work date and interpreted in `BUSINESS_TIMEZONE` (default `Asia/Kolkata`). Checkout must be later than check-in, and overlapping visits on the same sheet are rejected.
+`GET /api/v1/timesheet-confirmation?token=...` loads a one-time, no-login confirmation summary. `POST /api/v1/timesheet-confirmation` accepts `{ "token": "...", "response": "YES" }` or `NO`. Links expire after seven days and can be used only once.
 
 ## Companies
 
@@ -95,7 +79,14 @@ All routes are under `/api/v1/admin` and require an active Admin session. Mutati
 | GET | `/timesheets/:id` | Full timesheet detail for review. |
 | POST | `/timesheets/:id/review` | Record `APPROVED`, `REJECTED`, or `CHANGES_REQUESTED`; non-approval decisions require a comment of at least five characters. |
 | GET | `/agents` | Search/filter Agents and view activity totals. |
+| POST | `/agents` | Create an Agent record without a login. |
+| PUT | `/agents/:id` | Update an Agent record. |
+| DELETE | `/agents/:id` | Delete an Agent from active administration while preserving existing timesheet history. |
 | PATCH | `/agents/:id/status` | Activate/deactivate an Agent; deactivation revokes sessions. |
+| POST | `/agent-timesheets` | Create or open an Agent timesheet for a work date. |
+| GET/PUT | `/agent-timesheets/:id` | Load or save an Agent timesheet. |
+| POST | `/agent-timesheets/:id/visits` | Add a visit to an Agent timesheet. |
+| POST | `/agent-timesheets/:id/request-confirmation` | Email one-time Yes/No confirmation links to the Agent. |
 | GET | `/companies` | Search/filter company review and availability status; accepts `search`, `reviewStatus`, `status`, `page`, and `pageSize`. |
 | PATCH | `/companies/:id` | Approve a pending company or change its availability; inactive entries can be reactivated. |
 | GET | `/audits` | Filter append-only audit events by action/entity type. |

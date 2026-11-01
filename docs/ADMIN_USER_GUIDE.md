@@ -6,9 +6,7 @@ This guide explains the Admin side of the Timesheet Portal: reviewing work, mana
 
 ## Admin access
 
-Open `/login`, then choose **Admin sign in**. The direct `/login/admin` address and older `/admin/login` address also remain available for bookmarks. Enter your Admin email and password. Each Admin sign-in also requires a fresh six-digit security code sent to the registered Admin email. Enter the code before it expires to finish signing in.
-
-If you need to record your own field work, open the navigation menu and choose **Switch to Agent workspace**. Choose **Switch to Admin workspace** from the same menu when you are finished. Workspace changes apply only to your current session and are recorded in the audit log; you never need to edit the URL.
+Open `/login` and enter your Admin email and password. Each Admin sign-in also requires a fresh six-digit security code sent to the registered Admin email. Agents do not sign in; all Agent and timesheet work stays in the Admin workspace.
 
 The Admin account is a one-time setup account. If setup has not yet been completed, follow the onboarding instructions for creating the first Admin account. Do not use the one-time setup flow for ordinary sign-ins.
 
@@ -20,12 +18,12 @@ For security, use **Sign out** when you finish, especially on a shared phone or 
 - **Reviews:** timesheets awaiting a decision.
 - **Timesheets:** search, filter, sort, and inspect Agent records.
 - **Work calendar:** approved visit hours by Agent and day.
-- **Agents:** email verification, account status, activity totals, and access controls.
+- **Agents:** create, edit, deactivate, or delete Agent records and fill their timesheets.
 - **Companies:** review Agent-submitted companies and maintain the shared directory.
 - **Reports:** daily and monthly trends, Agent performance, and company coverage.
 - **Exports:** download filtered CSV or Excel files.
 - **Invoices:** generate an Agent invoice PDF for a month.
-- **Excel import:** import historical timesheet visits or invite Agents from a workbook.
+- **Excel import:** import historical timesheet visits for existing Agent records.
 - **Audit log:** inspect recorded administrative and business actions.
 - **Temporary:** review user sessions, including the server-observed login IP, browser user-agent, and session status.
 - **Account & security:** change the Admin password.
@@ -68,14 +66,11 @@ To focus the calendar:
 
 The calendar updates only after filters are applied. With a specific Agent selected, hover over or focus a day cell to see its approved hours and date. The month selector does not allow future months.
 
-## Manage Agent accounts
+## Manage Agents and enter timesheets
 
-Use the Agent directory to search by name, username, or email. The directory distinguishes **Verified** email from **Active** account status; verification alone does not mean that an account is currently allowed to sign in. The Admin appears as **Admin + Agent** for reporting and invoice selection, but the protected Admin account cannot be deactivated here.
+Use the Agent directory to create, edit, deactivate, or delete Agent records. Deleting an Agent removes the record from the directory and new-timesheet selectors. Existing timesheets, visits, reports, and audit history remain available.
 
-- Select **Deactivate** and confirm to disable an Agent. Their active sessions are revoked, and they cannot sign in while inactive. Their existing timesheets and visit history are retained.
-- Select **Activate** and confirm to restore access. The Agent must sign in again because the old sessions remain revoked.
-
-Agents create their own accounts through registration; the Admin directory controls their access rather than creating duplicate accounts.
+Select **Fill timesheet**, choose the work date, add company visits, and write the summary. Select **Email agent for confirmation** when the record is ready. The Agent receives one-time **Yes** and **No** links that expire after seven days. Yes approves the timesheet; No marks it rejected so the Admin can correct and resend it. Each request and response is recorded in the audit log.
 
 ## Manage companies
 
@@ -109,16 +104,6 @@ In **Invoices**, select an Agent and billing month, then generate a PDF. The inv
 | Bronze | INR 600 |
 
 The invoice is a generated report; download it and follow your organization's separate delivery and accounting process.
-
-### Import Agent invitations
-
-1. Open **Excel import** and select **Invite Agents**.
-2. Download the Agent invitation template. Keep the `Full Name` and `Email` headers and use one row per Agent.
-3. Upload the `.xlsx` workbook and select **Preview and validate**. Existing accounts, prior invitations, duplicate emails, and malformed rows are rejected before sending.
-4. Review the rows, then choose **Import and send setup links**. Each valid Agent receives a one-time link, valid for 7 days, to choose a password. The account is created after the Agent completes setup; usernames are generated automatically.
-5. Review delivery status under **Pending invitations**. Select **Resend link** for an invitation whose email failed or expired; this creates a fresh link and invalidates the previous one.
-
-Invitation records and import actions are retained for auditing. Configure the Brevo sender and API key before sending production invitations.
 
 ## Audit log
 

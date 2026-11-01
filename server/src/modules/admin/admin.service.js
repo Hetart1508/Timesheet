@@ -1,6 +1,8 @@
 import { AppError } from '../../utils/app-error.js';
 import { ipVersion, normalizeIpAddress } from '../../utils/ip-address.js';
 import { currentBusinessDate, utcToIstTime } from '../../utils/business-time.js';
+import { hashToken, randomToken } from '../../utils/crypto.js';
+import { normalizeEmail, normalizeName } from '../../utils/normalize.js';
 
 const dateOnly = (value) => value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
 const duration = (minutes) => ({ minutes: Number(minutes || 0), hours: Math.round((Number(minutes || 0) / 60) * 100) / 100 });
@@ -84,6 +86,71 @@ export class AdminService {
       if (!before) throw new AppError(404, 'AGENT_NOT_FOUND', 'Agent not found');
       await this.repository.audit({ actorUserId: actor.id, action: 'AGENT_STATUS_CHANGED', entityType: 'USER', entityId: id, before: { status: before.status }, after: { status }, ipAddress: request.ip }, connection);
     });
+  }
+
+  async createAgent(input, actor, request = {}) {
+    const email = normalizeEmail(input.email);
+    const stem = normalizeName(input.fullName).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '.').replace(/^\.+|\.+$/g, '').slice(0, 30) || 'agent';
+    const unique = randomToken(8).toLowerCase();
+    const data = {
+      fullName: normalizeName(input.fullName), email, emailNormalized: email,
+      username: `${stem}-${unique}`, usernameNormalized: `${stem}-${unique}`,
+      passwordHash: `managed:${randomToken(32)}`, status: input.status,
+    };
+    try {
+      const id = await this.repository.transaction(async (connection) => {
+        const createdId = await this.repository.createAgent(data, connection);
+        await this.repository.audit({ actorUserId: actor.id, action: 'AGENT_CREATED', entityType: 'USER', entityId: createdId, after: { fullName: data.fullName, email, status: data.status }, ipAddress: request.ip }, connection);
+        return createdId;
+      });
+      return { id, fullName: data.fullName, email, status: data.status };
+    } catch (error) {
+      if (error?.code === 'ER_DUP_ENTRY') throw new AppError(409, 'AGENT_EMAIL_IN_USE', 'An agent already uses this email address');
+      throw error;
+    }
+  }
+
+  async updateAgent(id, input, actor, request = {}) {
+    const data = { fullName: normalizeName(input.fullName), email: normalizeEmail(input.email), emailNormalized: normalizeEmail(input.email), status: input.status };
+    try {
+      await this.repository.transaction(async (connection) => {
+        const before = await this.repository.updateAgent(id, data, connection);
+        if (!before) throw new AppError(404, 'AGENT_NOT_FOUND', 'Agent not found');
+        await this.repository.audit({ actorUserId: actor.id, action: 'AGENT_UPDATED', entityType: 'USER', entityId: id,
+          before: { fullName: before.full_name, email: before.email, status: before.status }, after: data, ipAddress: request.ip }, connection);
+      });
+      return { id: Number(id), ...data };
+    } catch (error) {
+      if (error?.code === 'ER_DUP_ENTRY') throw new AppError(409, 'AGENT_EMAIL_IN_USE', 'An agent already uses this email address');
+      throw error;
+    }
+  }
+
+  async deleteAgent(id, actor, request = {}) {
+    await this.repository.transaction(async (connection) => {
+      const before = await this.repository.deleteAgent(id, connection);
+      if (!before) throw new AppError(404, 'AGENT_NOT_FOUND', 'Agent not found');
+      await this.repository.audit({ actorUserId: actor.id, action: 'AGENT_DELETED', entityType: 'USER', entityId: id,
+        before: { fullName: before.full_name, email: before.email, status: before.status },
+        after: { deleted: true, historyPreserved: before.historyPreserved }, ipAddress: request.ip }, connection);
+    });
+  }
+
+  async requestConfirmation(id, actor, request = {}) {
+    const rawToken = randomToken(32);
+    let agent;
+    await this.repository.transaction(async (connection) => {
+      const timesheet = await this.repository.confirmationFacts(id, connection);
+      if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
+      if (!timesheet.daily_summary || timesheet.daily_summary.trim().length < 20) throw new AppError(422, 'DECLARATION_REQUIRED', 'Enter a summary of at least 20 characters before requesting confirmation');
+      if (!Number(timesheet.visit_count)) throw new AppError(422, 'VISITS_REQUIRED', 'Add at least one company visit before requesting confirmation');
+      await this.repository.createConfirmation(id, actor.id, hashToken(rawToken), new Date(Date.now() + 7 * 86_400_000), connection);
+      await this.repository.audit({ actorUserId: actor.id, action: 'TIMESHEET_CONFIRMATION_SENT', entityType: 'TIMESHEET', entityId: id,
+        before: { status: timesheet.status }, after: { status: 'SUBMITTED', recipient: timesheet.agent_email }, ipAddress: request.ip }, connection);
+      agent = { email: timesheet.agent_email, fullName: timesheet.agent_name, workDate: dateOnly(timesheet.work_date) };
+    });
+    const delivery = await this.emailService.sendTimesheetConfirmation(agent, { id, workDate: agent.workDate, token: rawToken });
+    return { delivery: delivery.delivered ? 'SENT' : 'FAILED' };
   }
 
   async companies(filters) {

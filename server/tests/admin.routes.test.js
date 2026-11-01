@@ -10,12 +10,8 @@ const service = {
   audits: vi.fn(async (filters) => ({ audits: [], pagination: { page: filters.page, pageSize: filters.pageSize, total: 0 } })),
   sessions: vi.fn(async (filters) => ({ sessions: [], pagination: { page: filters.page, pageSize: filters.pageSize, total: 0 } })),
 };
-const agentImportService = {
-  template: vi.fn(async () => Buffer.from('template')),
-  invitations: vi.fn(async () => [{ id: 4, fullName: 'Asha Patel', email: 'asha@example.com', status: 'SENT' }]),
-};
-const agentApp = createApp({ adminRouter: createAdminRouter({ service, agentImportService, authenticate: (req, _res, next) => { req.user = { id: 2, role: 'AGENT' }; next(); } }) });
-const adminApp = createApp({ adminRouter: createAdminRouter({ service, agentImportService, authenticate: (req, _res, next) => { req.user = { id: 1, role: 'ADMIN' }; next(); } }) });
+const agentApp = createApp({ adminRouter: createAdminRouter({ service, authenticate: (req, _res, next) => { req.user = { id: 2, role: 'AGENT' }; next(); } }) });
+const adminApp = createApp({ adminRouter: createAdminRouter({ service, authenticate: (req, _res, next) => { req.user = { id: 1, role: 'ADMIN' }; next(); } }) });
 
 describe('Admin API authorization', () => {
   it('rejects an authenticated Agent from Admin endpoints', async () => {
@@ -27,13 +23,6 @@ describe('Admin API authorization', () => {
     const response = await request(adminApp).get('/api/v1/admin/dashboard').expect(200);
     expect(response.body.success).toBe(true);
     expect(response.body.data.metrics.pendingReviews).toBe(0);
-  });
-
-  it('allows an authenticated Admin to load Agent invitations and blocks Agents', async () => {
-    const response = await request(adminApp).get('/api/v1/admin/imports/agents/invitations').expect(200);
-    expect(response.body.data.invitations).toHaveLength(1);
-    expect(agentImportService.invitations).toHaveBeenCalled();
-    await request(agentApp).get('/api/v1/admin/imports/agents/invitations').expect(403);
   });
 
   it('accepts searchable, sortable, paginated Admin timesheet queries', async () => {

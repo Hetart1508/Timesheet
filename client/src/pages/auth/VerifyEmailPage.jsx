@@ -30,11 +30,11 @@ export default function VerifyEmailPage() {
     }
   };
 
-  return <AuthShell eyebrow="Email verification" title={state.verified ? 'Your email is verified' : 'Enter your verification code'} description={state.verified ? 'Your Agent account is ready to use.' : 'Enter the six-digit code sent to your email. The code expires in 10 minutes.'} footer={state.verified ? <Link to="/login/agent">Continue to sign in</Link> : <Link to="/resend-verification">Send a new code</Link>}>
+  return <AuthShell eyebrow="Email verification" title={state.verified ? 'Your email is verified' : 'Enter your verification code'} description={state.verified ? 'Your Admin account is ready to use.' : 'Enter the six-digit code sent to your email. The code expires in 10 minutes.'} footer={state.verified ? <Link to="/login">Continue to sign in</Link> : <Link to="/resend-verification">Send a new code</Link>}>
     {state.verified ? <Alert type="success">Email verified successfully.</Alert> : <form className="auth-form" onSubmit={submit}>
       <Alert>{state.error}</Alert>
       <FormField label="Email address" name="email" type="email" autoComplete="email" required maxLength="254" error={fieldErrors.email} value={form.email} onChange={update} />
-      <FormField label="Six-digit code" name="otp" type="text" inputMode="numeric" autoComplete="one-time-code" required minLength="6" maxLength="6" pattern="[0-9]{6}" error={fieldErrors.otp} value={form.otp} onChange={update} />
+      <FormField label="Six-digit code" name="otp" type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus required minLength="6" maxLength="6" pattern="[0-9]{6}" error={fieldErrors.otp} value={form.otp} onChange={update} />
       <button className="primary-button" disabled={state.submitting || form.otp.length !== 6}>{state.submitting ? 'Verifying…' : 'Verify email'}</button>
     </form>}
   </AuthShell>;

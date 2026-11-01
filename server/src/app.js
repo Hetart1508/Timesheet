@@ -8,13 +8,13 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { authRouter } from './modules/auth/auth.routes.js';
-import { timesheetRouter } from './modules/timesheets/timesheet.routes.js';
 import { companyRouter } from './modules/companies/company.routes.js';
 import { adminRouter } from './modules/admin/admin.routes.js';
 import { reportRouter } from './modules/reports/report.routes.js';
 import { verifyRequestOrigin } from './middleware/csrf.js';
 import { AppError } from './utils/app-error.js';
 import { errorHandler, notFound } from './middleware/errors.js';
+import { confirmationRouter } from './modules/confirmations/confirmation.routes.js';
 
 export function createApp(options = {}) {
   const app = express();
@@ -42,8 +42,8 @@ export function createApp(options = {}) {
   app.use('/api/v1', verifyRequestOrigin);
 
   app.use('/api/v1/health', healthRouter);
+  app.use('/api/v1/timesheet-confirmation', options.confirmationRouter || confirmationRouter);
   app.use('/api/v1/auth', options.authRouter || authRouter);
-  app.use('/api/v1/agent', options.timesheetRouter || timesheetRouter);
   app.use('/api/v1/companies', options.companyRouter || companyRouter);
   app.use('/api/v1/admin', options.adminRouter || adminRouter);
   app.use('/api/v1/admin', options.reportRouter || reportRouter);

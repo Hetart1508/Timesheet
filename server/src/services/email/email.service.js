@@ -109,4 +109,13 @@ export class EmailService {
       developmentLink: url,
     });
   }
+
+  sendTimesheetConfirmation(agent, timesheet) {
+    const base = `${this.config.APP_BASE_URL}/confirm-timesheet?token=${encodeURIComponent(timesheet.token)}`;
+    return this.sendTracked({
+      recipient: agent.email, type: 'TIMESHEET_CONFIRMATION', entityType: 'TIMESHEET', entityId: timesheet.id,
+      template: templates.timesheetConfirmation({ agentName: agent.fullName, workDate: timesheet.workDate, yesUrl: `${base}&response=YES`, noUrl: `${base}&response=NO` }),
+      developmentLink: base,
+    });
+  }
 }

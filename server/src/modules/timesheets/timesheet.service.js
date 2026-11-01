@@ -55,6 +55,39 @@ export class TimesheetService {
     return this.get(timesheet.id, agentId);
   }
 
+  async startForAdmin(agentId, requestedDate) {
+    if (!await this.repository.findActiveAgent(agentId)) throw new AppError(422, 'AGENT_NOT_ACTIVE', 'Select an active agent');
+    return this.start(agentId, requestedDate);
+  }
+
+  async getForAdmin(id) {
+    const timesheet = await this.repository.findById(id);
+    if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
+    return this.get(id, timesheet.agent_id);
+  }
+
+  async ownerId(id) {
+    const timesheet = await this.repository.findById(id);
+    if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
+    return Number(timesheet.agent_id);
+  }
+
+  async updateSummaryForAdmin(id, actorId, dailySummary, request = {}) {
+    return this.updateSummary(id, await this.ownerId(id), dailySummary, { ...request, actorUserId: actorId });
+  }
+
+  async addVisitForAdmin(id, actorId, input, request = {}) {
+    return this.addVisit(id, await this.ownerId(id), input, { ...request, actorUserId: actorId });
+  }
+
+  async updateVisitForAdmin(visitId, timesheetId, actorId, input, request = {}) {
+    return this.updateVisit(visitId, await this.ownerId(timesheetId), input, { ...request, actorUserId: actorId });
+  }
+
+  async deleteVisitForAdmin(visitId, timesheetId, actorId, request = {}) {
+    return this.deleteVisit(visitId, await this.ownerId(timesheetId), { ...request, actorUserId: actorId });
+  }
+
   async get(id, agentId) {
     const detail = await this.repository.detail(id, agentId);
     if (!detail) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
@@ -67,7 +100,7 @@ export class TimesheetService {
       if (!timesheet) throw new AppError(404, 'TIMESHEET_NOT_FOUND', 'Timesheet not found');
       await this.repository.updateSummary(id, dailySummary.trim(), connection);
       await this.repository.reopenAfterEdit(timesheet, connection);
-      await this.repository.audit({ actorUserId: agentId, action: 'TIMESHEET_UPDATED', entityType: 'TIMESHEET', entityId: id, before: { dailySummary: timesheet.daily_summary, status: timesheet.status }, after: { dailySummary: dailySummary.trim(), status: 'DRAFT' }, ipAddress: request.ip }, connection);
+      await this.repository.audit({ actorUserId: request.actorUserId || agentId, action: 'TIMESHEET_UPDATED', entityType: 'TIMESHEET', entityId: id, before: { dailySummary: timesheet.daily_summary, status: timesheet.status }, after: { dailySummary: dailySummary.trim(), status: 'DRAFT' }, ipAddress: request.ip }, connection);
     });
     return this.get(id, agentId);
   }
@@ -97,9 +130,9 @@ export class TimesheetService {
       const existingVisits = (await this.repository.detail(timesheetId, agentId, connection))?.visits || [];
       const { checkInAt, checkOutAt } = this.visitTimes(dateOnly(timesheet.work_date), input, existingVisits);
       if (await this.repository.overlappingVisit(timesheetId, checkInAt, checkOutAt, null, connection)) throw new AppError(409, 'VISIT_OVERLAP', 'This visit overlaps another recorded visit');
-      const visitId = await this.repository.createVisit({ ...input, timesheetId, userId: agentId, companyName: company.company_name, checkInAt, checkOutAt }, connection);
+      const visitId = await this.repository.createVisit({ ...input, timesheetId, userId: request.actorUserId || agentId, companyName: company.company_name, checkInAt, checkOutAt }, connection);
       await this.repository.reopenAfterEdit(timesheet, connection);
-      await this.repository.audit({ actorUserId: agentId, action: 'VISIT_CREATED', entityType: 'VISIT', entityId: visitId, after: { ...input, companyName: company.company_name }, ipAddress: request.ip }, connection);
+      await this.repository.audit({ actorUserId: request.actorUserId || agentId, action: 'VISIT_CREATED', entityType: 'VISIT', entityId: visitId, after: { ...input, companyName: company.company_name }, ipAddress: request.ip }, connection);
     });
     return this.get(timesheetId, agentId);
   }
@@ -122,9 +155,9 @@ export class TimesheetService {
       const checkOutAt = effectiveInput.checkOutTime ? istLocalToUtc(dateOnly(visit.work_date), effectiveInput.checkOutTime) : visit.check_out_at;
       if (checkOutAt <= checkInAt) throw new AppError(422, 'INVALID_VISIT_DURATION', 'Check-out time must be later than check-in time');
       if (await this.repository.overlappingVisit(timesheetId, checkInAt, checkOutAt, visitId, connection)) throw new AppError(409, 'VISIT_OVERLAP', 'This visit overlaps another recorded visit');
-      await this.repository.updateVisit(visitId, { ...input, userId: agentId, companyName: company.company_name, checkInAt, checkOutAt }, connection);
+      await this.repository.updateVisit(visitId, { ...input, userId: request.actorUserId || agentId, companyName: company.company_name, checkInAt, checkOutAt }, connection);
       await this.repository.reopenAfterEdit({ id: timesheetId, status: visit.timesheet_status }, connection);
-      await this.repository.audit({ actorUserId: agentId, action: 'VISIT_UPDATED', entityType: 'VISIT', entityId: visitId, before: { companyId: visit.company_id, checkInAt: visit.check_in_at, checkOutAt: visit.check_out_at }, after: { ...input, companyName: company.company_name }, ipAddress: request.ip }, connection);
+      await this.repository.audit({ actorUserId: request.actorUserId || agentId, action: 'VISIT_UPDATED', entityType: 'VISIT', entityId: visitId, before: { companyId: visit.company_id, checkInAt: visit.check_in_at, checkOutAt: visit.check_out_at }, after: { ...input, companyName: company.company_name }, ipAddress: request.ip }, connection);
     });
     return this.get(timesheetId, agentId);
   }
@@ -135,9 +168,9 @@ export class TimesheetService {
       const visit = await this.repository.findOwnedVisit(visitId, agentId, connection, true);
       if (!visit) throw new AppError(404, 'VISIT_NOT_FOUND', 'Visit not found');
       timesheetId = visit.timesheet_id;
-      await this.repository.softDeleteVisit(visitId, agentId, connection);
+      await this.repository.softDeleteVisit(visitId, request.actorUserId || agentId, connection);
       await this.repository.reopenAfterEdit({ id: timesheetId, status: visit.timesheet_status }, connection);
-      await this.repository.audit({ actorUserId: agentId, action: 'VISIT_DELETED', entityType: 'VISIT', entityId: visitId, before: { companyName: visit.company_name_snapshot, checkInAt: visit.check_in_at, checkOutAt: visit.check_out_at }, after: { deleted: true }, ipAddress: request.ip }, connection);
+      await this.repository.audit({ actorUserId: request.actorUserId || agentId, action: 'VISIT_DELETED', entityType: 'VISIT', entityId: visitId, before: { companyName: visit.company_name_snapshot, checkInAt: visit.check_in_at, checkOutAt: visit.check_out_at }, after: { deleted: true }, ipAddress: request.ip }, connection);
     });
     return this.get(timesheetId, agentId);
   }

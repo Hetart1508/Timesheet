@@ -133,13 +133,7 @@ The Vite development server proxies `/api` to Express. The browser API client se
 
 ## Phase 2 authentication test
 
-With `DEV_EMAIL_MODE=true`, registration and Admin sign-in write their six-digit OTPs to the server log, while forgot-password writes its safe local link; validation still happens normally. Everyone starts at `/login` and chooses the Agent or Admin workspace. Admin authentication still requires a valid email, password, and fresh one-time email code before any session is created. Direct `/login/agent`, `/login/admin`, and legacy `/admin/login` links remain available. After secure Admin sign-in, the responsive navigation can switch the current session between Admin and Agent workspaces.
-
-1. Open `http://localhost:5173/register` and create an Agent.
-2. Enter the six-digit OTP from the email (or development server log). It expires after 10 minutes.
-3. Sign in with the verified Agent email and password.
-4. Open Profile and change the password; confirm the app signs you out.
-5. Use Forgot password and follow the new server-log URL.
+With `DEV_EMAIL_MODE=true`, Admin verification and sign-in write their six-digit OTPs to the server log, while forgot-password and timesheet confirmation write safe local links. Admin authentication requires a valid email, password, and fresh one-time email code before a session is created. Agents are managed from the Admin directory and do not sign in.
 
 The first Admin can use the one-time `/admin/register` setup flow. Alternatively, temporarily set the four `ADMIN_*` values in `.env`, then run:
 
